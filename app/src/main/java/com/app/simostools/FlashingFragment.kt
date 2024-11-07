@@ -13,12 +13,14 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.Fragment
-import android.widget.*
+import android.widget.ArrayAdapter
+import android.widget.ListView
+import android.widget.ProgressBar
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat.startForegroundService
-import android.widget.ArrayAdapter
 import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
@@ -36,22 +38,23 @@ class FlashingFragment : Fragment() {
     private lateinit var mViewModel: FlashViewModel
     private var flashConfirmationHoldTime: Long = 0L
 
-    var resultPickLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val uri: Uri? = result.data?.data
-            uri?.let {
-                UDSFlasher.setBinFile(requireActivity().contentResolver.openInputStream(uri)!!)
-                UDSFlasher.setFullFlash(mViewModel.flashFull)
+    var resultPickLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val uri: Uri? = result.data?.data
+                uri?.let {
+                    UDSFlasher.setBinFile(requireActivity().contentResolver.openInputStream(uri)!!)
+                    UDSFlasher.setFullFlash(mViewModel.flashFull)
 
-                // Tell the service to start flashing
-                sendServiceMessage(BTServiceTask.DO_START_FLASH.toString())
+                    // Tell the service to start flashing
+                    sendServiceMessage(BTServiceTask.DO_START_FLASH.toString())
 
-                Toast.makeText(activity, "Success", Toast.LENGTH_SHORT).show()
-            }?: Toast.makeText(activity, "Failed", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(activity, "Failed", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(activity, "Success", Toast.LENGTH_SHORT).show()
+                } ?: Toast.makeText(activity, "Failed", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(activity, "Failed", Toast.LENGTH_SHORT).show()
+            }
         }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -65,7 +68,11 @@ class FlashingFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         mViewModel = ViewModelProvider(this).get(FlashViewModel::class.java)
 
-        mArrayAdapter = SwitchArrayAdapter(requireContext(), R.layout.fragment_message, gFlashMsgList?: arrayOf())
+        mArrayAdapter = SwitchArrayAdapter(
+            requireContext(),
+            R.layout.fragment_message,
+            gFlashMsgList ?: arrayOf()
+        )
         mArrayAdapter?.let { adapter ->
             gFlashMsgList?.forEach {
                 adapter.add(it)
@@ -167,21 +174,46 @@ class FlashingFragment : Fragment() {
         override fun onReceive(context: Context?, intent: Intent) {
             DebugLog.d(TAG, "Flashing Fragment received action: " + intent.action.toString())
             when (intent.action) {
-                GUIMessage.STATE_CONNECTION.toString()      -> mViewModel.connectionState = intent.getSerializableExtra(GUIMessage.STATE_CONNECTION.toString()) as BLEConnectionState
-                GUIMessage.STATE_TASK.toString()            -> mViewModel.connectionState = BLEConnectionState.CONNECTED
-                GUIMessage.FLASH_INFO.toString()            -> doWriteMessage(intent.getStringExtra(GUIMessage.FLASH_INFO.toString())?: "")
-                GUIMessage.FLASH_INFO_CLEAR.toString()      -> doClearMessages()
-                GUIMessage.FLASH_PROGRESS.toString()        -> setProgressBar(intent.getIntExtra(GUIMessage.FLASH_PROGRESS.toString(), 0))
-                GUIMessage.FLASH_PROGRESS_MAX.toString()    -> setProgressBarMax(intent.getIntExtra(GUIMessage.FLASH_PROGRESS_MAX.toString(), 0))
-                GUIMessage.FLASH_PROGRESS_SHOW.toString()   -> setProgressBarShow(intent.getBooleanExtra(GUIMessage.FLASH_PROGRESS_SHOW.toString(), false))
-                GUIMessage.FLASH_CONFIRM.toString()         -> promptUserConfirmation()
-                GUIMessage.FLASH_BUTTON_RESET.toString()    -> resetFlashButton(false)
+                GUIMessage.STATE_CONNECTION.toString() -> mViewModel.connectionState =
+                    intent.getSerializableExtra(GUIMessage.STATE_CONNECTION.toString()) as BLEConnectionState
+
+                GUIMessage.STATE_TASK.toString() -> mViewModel.connectionState =
+                    BLEConnectionState.CONNECTED
+
+                GUIMessage.FLASH_INFO.toString() -> doWriteMessage(
+                    intent.getStringExtra(GUIMessage.FLASH_INFO.toString()) ?: ""
+                )
+
+                GUIMessage.FLASH_INFO_CLEAR.toString() -> doClearMessages()
+                GUIMessage.FLASH_PROGRESS.toString() -> setProgressBar(
+                    intent.getIntExtra(
+                        GUIMessage.FLASH_PROGRESS.toString(),
+                        0
+                    )
+                )
+
+                GUIMessage.FLASH_PROGRESS_MAX.toString() -> setProgressBarMax(
+                    intent.getIntExtra(
+                        GUIMessage.FLASH_PROGRESS_MAX.toString(),
+                        0
+                    )
+                )
+
+                GUIMessage.FLASH_PROGRESS_SHOW.toString() -> setProgressBarShow(
+                    intent.getBooleanExtra(
+                        GUIMessage.FLASH_PROGRESS_SHOW.toString(),
+                        false
+                    )
+                )
+
+                GUIMessage.FLASH_CONFIRM.toString() -> promptUserConfirmation()
+                GUIMessage.FLASH_BUTTON_RESET.toString() -> resetFlashButton(false)
             }
         }
     }
 
     private fun clickFlash(full: Boolean) {
-        var flashString = if(full) "Flash Full\n---------------"
+        var flashString = if (full) "Flash Full\n---------------"
         else "Flash CAL\n---------------"
 
         if (mViewModel.connectionState == BLEConnectionState.CONNECTED) {
@@ -200,15 +232,15 @@ class FlashingFragment : Fragment() {
     }
 
     private fun resetFlashButton(full: Boolean) {
-        val flashButton = if(full) requireView().findViewById<SwitchButton>(R.id.buttonFlashFull)
-            else requireView().findViewById<SwitchButton>(R.id.buttonFlashCAL)
+        val flashButton = if (full) requireView().findViewById<SwitchButton>(R.id.buttonFlashFull)
+        else requireView().findViewById<SwitchButton>(R.id.buttonFlashCAL)
 
         flashButton.apply {
             paintBG.color = ColorList.BT_BG.value
             paintRim.color = ColorList.BT_RIM.value
             setTextColor(ColorList.BT_TEXT.value)
-            text = if(full) "Flash Full"
-                else "Flash CAL"
+            text = if (full) "Flash Full"
+            else "Flash CAL"
             setOnClickListener {
                 clickFlash(full)
             }
@@ -225,16 +257,16 @@ class FlashingFragment : Fragment() {
             setOnTouchListener(object : View.OnTouchListener {
                 override fun onTouch(v: View?, event: MotionEvent?): Boolean {
                     when (event?.action) {
-                        MotionEvent.ACTION_DOWN ->{
+                        MotionEvent.ACTION_DOWN -> {
                             flashConfirmationHoldTime = SystemClock.uptimeMillis()
                             //time the button press
                         }
+
                         MotionEvent.ACTION_UP -> {
                             var now = SystemClock.uptimeMillis()
-                            if(now - flashConfirmationHoldTime > 1000){
+                            if (now - flashConfirmationHoldTime > 1000) {
                                 sendServiceMessage(BTServiceTask.FLASH_CONFIRMED.toString())
-                            }
-                            else{
+                            } else {
                                 sendServiceMessage(BTServiceTask.FLASH_CANCELED.toString())
                             }
                         }
@@ -261,7 +293,7 @@ class FlashingFragment : Fragment() {
 
     private fun doWriteMessage(message: String) {
         // construct a string from the valid bytes in the buffer
-        val value = gFlashMsgList?: arrayOf()
+        val value = gFlashMsgList ?: arrayOf()
         gFlashMsgList = value + message
         mArrayAdapter?.let {
             it.add(message)

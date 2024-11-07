@@ -11,19 +11,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import java.lang.Exception
 
-class LoggingBaseFragment: Fragment() {
-    private var TAG                             = "LoggingBaseFragment"
-    private var mFragmentName                   = "ECU"
-    private var mLastWarning                    = false
-    private var mLayouts: Array<View?>?         = null
-    private var mGauges: Array<SwitchGauge?>?   = null
-    private var mPIDsPerLayout                  = 1
-    private var mLayoutName: Int                = R.id.loggingLayoutScroll
-    private var mPIDList                        = byteArrayOf()
+class LoggingBaseFragment : Fragment() {
+    private var TAG = "LoggingBaseFragment"
+    private var mFragmentName = "ECU"
+    private var mLastWarning = false
+    private var mLayouts: Array<View?>? = null
+    private var mGauges: Array<SwitchGauge?>? = null
+    private var mPIDsPerLayout = 1
+    private var mLayoutName: Int = R.id.loggingLayoutScroll
+    private var mPIDList = byteArrayOf()
 
     override fun onDestroy() {
         super.onDestroy()
@@ -69,7 +69,12 @@ class LoggingBaseFragment: Fragment() {
 
         val filter = IntentFilter()
         filter.addAction(GUIMessage.READ_LOG.toString())
-        activity?.registerReceiver(mBroadcastReceiver, filter)
+        context?.let {
+            ContextCompat.registerReceiver(
+                it, mBroadcastReceiver, filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        }
 
         //Do we keep the screen on?
         view?.keepScreenOn = ConfigSettings.KEEP_SCREEN_ON.toBoolean()
@@ -116,10 +121,11 @@ class LoggingBaseFragment: Fragment() {
         if (ConfigSettings.ALWAYS_PORTRAIT.toBoolean())
             currentOrientation = Configuration.ORIENTATION_PORTRAIT
 
-        when(currentOrientation) {
+        when (currentOrientation) {
             Configuration.ORIENTATION_LANDSCAPE -> {
                 mPIDsPerLayout = 3
             }
+
             Configuration.ORIENTATION_PORTRAIT -> {
                 mPIDsPerLayout = 2
             }
@@ -158,7 +164,7 @@ class LoggingBaseFragment: Fragment() {
                 buildPIDList(mFragmentName == "ECU", mFragmentName == "DSG")
 
                 //Build layout
-                val pidList = if(mFragmentName == "DSG") PIDs.getDSGList()
+                val pidList = if (mFragmentName == "DSG") PIDs.getDSGList()
                 else PIDs.getList()
                 pidList?.let { list ->
                     var layoutCount = mPIDList.count() / mPIDsPerLayout
@@ -178,12 +184,13 @@ class LoggingBaseFragment: Fragment() {
                                 mLayouts!![i / mPIDsPerLayout] = pidLayout
                                 progID = R.id.pid_gauge
                             }
+
                             1 -> progID = R.id.pid_gauge1
                             2 -> progID = R.id.pid_gauge2
                         }
 
                         //get current data
-                        val pidData = if(mFragmentName == "DSG") PIDs.getDSGData()
+                        val pidData = if (mFragmentName == "DSG") PIDs.getDSGData()
                         else PIDs.getData()
 
                         val data = pidData!![mPIDList[i].toInt()]!!
@@ -222,7 +229,7 @@ class LoggingBaseFragment: Fragment() {
                                 gauge.textSize = gauge.textSize * 0.25f
                             }
                         }
-                        if(kotlin.math.abs(pid.progMin) == kotlin.math.abs(pid.progMax))
+                        if (kotlin.math.abs(pid.progMin) == kotlin.math.abs(pid.progMax))
                             gauge.setCentered(true, false)
                         gauge.setGraduations(ConfigSettings.DRAW_GRADUATIONS.toBoolean(), false)
                         gauge.setIndex(i)
@@ -246,14 +253,17 @@ class LoggingBaseFragment: Fragment() {
             var warnAny = false
             var lastI = -1
             try {
-                if(gauges.count() != mPIDList.count()) {
-                    DebugLog.d(TAG, "updateGauges - gauge count does not match pid count[${gauges.count()}:${mPIDList.count()}]")
+                if (gauges.count() != mPIDList.count()) {
+                    DebugLog.d(
+                        TAG,
+                        "updateGauges - gauge count does not match pid count[${gauges.count()}:${mPIDList.count()}]"
+                    )
                 }
                 for (i in 0 until mPIDList.count()) {
                     //get current PID & data
-                    val pidList = if(mFragmentName == "DSG") PIDs.getDSGList()
+                    val pidList = if (mFragmentName == "DSG") PIDs.getDSGList()
                     else PIDs.getList()
-                    val pidData = if(mFragmentName == "DSG") PIDs.getDSGData()
+                    val pidData = if (mFragmentName == "DSG") PIDs.getDSGData()
                     else PIDs.getData()
 
                     //get the current pid
@@ -302,8 +312,9 @@ class LoggingBaseFragment: Fragment() {
                                 "<font color=\"#${ColorList.GAUGE_VALUE.value.toColorHex()}\">" +
                                 "${pid.format.format(pid.value)}</font></big></b>" +
                                 "<small><br>${pid.format.format(data.min)} <b>:</b> " +
-                                "${pid.format.format(data.max)}<br>${pid.unit}</small>"
-                        , Html.FROM_HTML_OPTION_USE_CSS_COLORS)
+                                "${pid.format.format(data.max)}<br>${pid.unit}</small>",
+                        Html.FROM_HTML_OPTION_USE_CSS_COLORS
+                    )
 
                     lastI = i
                 }
@@ -324,18 +335,18 @@ class LoggingBaseFragment: Fragment() {
                     mLastWarning = false
                 }
 
-                DebugLog.d(TAG, "updateGauges [${lastI+1}:${mPIDList.count()}]")
+                DebugLog.d(TAG, "updateGauges [${lastI + 1}:${mPIDList.count()}]")
             } catch (e: Exception) {
-                DebugLog.e(TAG, "updateGauges - exception [${lastI+1}:${mPIDList.count()}]", e)
+                DebugLog.e(TAG, "updateGauges - exception [${lastI + 1}:${mPIDList.count()}]", e)
             }
-        }?: run {
+        } ?: run {
             DebugLog.d(TAG, "updateGauges - gauges are invalid pidlist count ${mPIDList.count()}")
         }
     }
 
     private fun buildPIDList(all: Boolean, dsg: Boolean) {
         //Build our list of PIDS in this layout
-        val pidList = if(dsg) PIDs.getDSGList()
+        val pidList = if (dsg) PIDs.getDSGList()
         else PIDs.getList()
         pidList?.let { list ->
             //get list of custom PIDS
@@ -347,7 +358,7 @@ class LoggingBaseFragment: Fragment() {
                     }
                 }
             }
-            if(!all && !dsg) {
+            if (!all && !dsg) {
                 for (i in 0 until customList.count()) {
                     var movedAhead = false
                     var lastPos = -1
@@ -403,7 +414,8 @@ class LoggingBaseFragment: Fragment() {
                     //Update callback
                     updateGauges()
                 }
-                else -> { }
+
+                else -> {}
             }
         }
     }

@@ -2,10 +2,10 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/LogViewerTabsLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".LogViewerTabsFragment"
-    android:id="@+id/LogViewerTabsLayout">
+    tools:context=".LogViewerTabsFragment">
 
     <ScrollView
         android:id="@+id/logviewerLayoutScrollMain"
@@ -38,17 +38,17 @@
 
         <com.app.simostools.SwitchButton
             android:id="@+id/buttonOk"
-            android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
+            android:layout_weight="1"
             android:text="@string/button_ok"
             android:textSize="24sp" />
 
         <com.app.simostools.SwitchButton
             android:id="@+id/buttonBack"
-            android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="match_parent"
+            android:layout_weight="1"
             android:text="@string/button_back"
             android:textSize="24sp" />
 

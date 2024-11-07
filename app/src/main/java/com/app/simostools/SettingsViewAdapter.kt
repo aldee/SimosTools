@@ -1,24 +1,24 @@
 package com.app.simostools
 
 import android.content.Context
-import android.view.View
-import androidx.recyclerview.widget.RecyclerView
-import android.view.ViewGroup
 import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.widget.SwitchCompat
-import java.lang.Exception
 import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.RecyclerView
 import java.lang.Long.parseLong
 
 class SettingsViewAdapter internal constructor(context: Context?, data: Array<PIDStruct?>?) :
-    RecyclerView.Adapter<SettingsViewAdapter.ViewHolder>(), ItemMoveCallback.ItemTouchHelperContract {
-    private val TAG                                 = "SettingsViewAdapter"
-    private val mData: Array<PIDStruct?>            = data?: arrayOfNulls(0)
-    private val mViews: Array<ViewHolder?>          = arrayOfNulls(data?.size?:0)
-    private val mInflater: LayoutInflater           = LayoutInflater.from(context)
-    private var mClickListener: ItemClickListener?  = null
+    RecyclerView.Adapter<SettingsViewAdapter.ViewHolder>(),
+    ItemMoveCallback.ItemTouchHelperContract {
+    private val TAG = "SettingsViewAdapter"
+    private val mData: Array<PIDStruct?> = data ?: arrayOfNulls(0)
+    private val mViews: Array<ViewHolder?> = arrayOfNulls(data?.size ?: 0)
+    private val mInflater: LayoutInflater = LayoutInflater.from(context)
+    private var mClickListener: ItemClickListener? = null
 
     // inflates the row layout from xml when needed
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -38,48 +38,50 @@ class SettingsViewAdapter internal constructor(context: Context?, data: Array<PI
     }
 
     // stores and recycles views as they are scrolled off screen
-    inner class ViewHolder internal constructor(itemView: View): RecyclerView.ViewHolder(itemView), View.OnClickListener {
-        var mPID:PIDStruct?                 = null
-        var mIndex:Int                      = 0
-        var mNameEdit: EditText?            = null
-        var mNameText: TextView?            = null
-        var mUnitEdit: EditText?            = null
-        var mUnitText: TextView?            = null
-        var mAddressEdit: EditText?         = null
-        var mAddressText: TextView?         = null
-        var mLengthEdit: EditText?          = null
-        var mLengthText: TextView?          = null
-        var mGaugeMinEdit: EditText?        = null
-        var mGaugeMinText: TextView?        = null
-        var mGaugeMaxEdit: EditText?        = null
-        var mGaugeMaxText: TextView?        = null
-        var mWarnMinEdit: EditText?         = null
-        var mWarnMinText: TextView?         = null
-        var mWarnMaxEdit: EditText?         = null
-        var mWarnMaxText: TextView?         = null
-        var mEquationEdit: EditText?        = null
-        var mEquationText: TextView?        = null
-        var mFormatEdit: EditText?          = null
-        var mFormatText: TextView?          = null
-        var mSmoothingEdit: EditText?       = null
-        var mSmoothingText: TextView?       = null
-        var mAssignToEdit: EditText?        = null
-        var mAssignToText: TextView?        = null
-        var mEnableSwitch: SwitchCompat?    = null
-        var mTabsText: TextView?            = null
-        var mTabsEdit: EditText?            = null
-        var mUpArrowButton: SwitchButton?   = null
+    inner class ViewHolder internal constructor(itemView: View) : RecyclerView.ViewHolder(itemView),
+        View.OnClickListener {
+        var mPID: PIDStruct? = null
+        var mIndex: Int = 0
+        var mNameEdit: EditText? = null
+        var mNameText: TextView? = null
+        var mUnitEdit: EditText? = null
+        var mUnitText: TextView? = null
+        var mAddressEdit: EditText? = null
+        var mAddressText: TextView? = null
+        var mLengthEdit: EditText? = null
+        var mLengthText: TextView? = null
+        var mGaugeMinEdit: EditText? = null
+        var mGaugeMinText: TextView? = null
+        var mGaugeMaxEdit: EditText? = null
+        var mGaugeMaxText: TextView? = null
+        var mWarnMinEdit: EditText? = null
+        var mWarnMinText: TextView? = null
+        var mWarnMaxEdit: EditText? = null
+        var mWarnMaxText: TextView? = null
+        var mEquationEdit: EditText? = null
+        var mEquationText: TextView? = null
+        var mFormatEdit: EditText? = null
+        var mFormatText: TextView? = null
+        var mSmoothingEdit: EditText? = null
+        var mSmoothingText: TextView? = null
+        var mAssignToEdit: EditText? = null
+        var mAssignToText: TextView? = null
+        var mEnableSwitch: SwitchCompat? = null
+        var mTabsText: TextView? = null
+        var mTabsEdit: EditText? = null
+        var mUpArrowButton: SwitchButton? = null
         var mDownArrowButton: SwitchButton? = null
-        var mDivider1: View?                = null
+        var mDivider1: View? = null
 
         fun loadData() {
             mData.forEachIndexed() { i, it ->
-                if(mPID == it) {
+                if (mPID == it) {
                     loadData(i, mPID)
                     return
                 }
             }
         }
+
         fun loadData(index: Int, pid: PIDStruct?) {
             mIndex = index
             mPID = pid
@@ -93,8 +95,8 @@ class SettingsViewAdapter internal constructor(context: Context?, data: Array<PI
             }
             mAddressEdit?.apply {
                 val add = pid?.address!!
-                if(add > 0xFFFF) setText(add.toInt().toHex())
-                    else setText(add.toShort().toHex())
+                if (add > 0xFFFF) setText(add.toInt().toHex())
+                else setText(add.toShort().toHex())
                 setTextColor(ColorList.TEXT.value)
             }
             mLengthEdit?.apply {
@@ -175,7 +177,7 @@ class SettingsViewAdapter internal constructor(context: Context?, data: Array<PI
                     pid.enabled = mEnableSwitch?.isChecked == true
                     pid.tabs = mTabsEdit?.text.toString()
                 }
-            } catch(e: Exception) {
+            } catch (e: Exception) {
                 DebugLog.e(TAG, "D", e)
             }
         }
@@ -278,16 +280,16 @@ class SettingsViewAdapter internal constructor(context: Context?, data: Array<PI
         if (fromPosition < toPosition) {
             for (i in fromPosition until toPosition) {
                 val from = getItem(i)
-                val to = getItem(i+1)
+                val to = getItem(i + 1)
                 setItem(i, to)
-                setItem(i+1, from)
+                setItem(i + 1, from)
             }
         } else {
             for (i in fromPosition downTo toPosition + 1) {
                 val from = getItem(i)
-                val to = getItem(i-1)
+                val to = getItem(i - 1)
                 setItem(i, to)
-                setItem(i-1, from)
+                setItem(i - 1, from)
             }
         }
         notifyItemMoved(fromPosition, toPosition)

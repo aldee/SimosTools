@@ -19,44 +19,46 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import java.io.File
 import java.io.FileInputStream
-import java.lang.Exception
 import java.lang.Math.random
 
-var gLogViewerData: Array<LogViewerDataStruct?>?    = null
-var gLogViewerLoadLast: Boolean                     = false
+var gLogViewerData: Array<LogViewerDataStruct?>? = null
+var gLogViewerLoadLast: Boolean = false
 
 class LogViewerViewModel : ViewModel() {
     var fullScreen: Boolean = false
 }
 
-data class LogViewerDataStruct(var name: String,
-                                var tabs: String,
-                                var min: Float,
-                                var max: Float,
-                                var enabled: Boolean,
-                                var color: Int,
-                                var format: String,
-                                var data: FloatArray)
+data class LogViewerDataStruct(
+    var name: String,
+    var tabs: String,
+    var min: Float,
+    var max: Float,
+    var enabled: Boolean,
+    var color: Int,
+    var format: String,
+    var data: FloatArray
+)
 
-class LogViewerFragment: Fragment() {
-    private var TAG                     = "LogViewerFragment"
-    private var mGraph:SwitchGraph?     = null
-    private var mButtons:LinearLayout?  = null
-    private var mPortrait:Boolean       = false
-    private var mLoadLast:Boolean       = false
+class LogViewerFragment : Fragment() {
+    private var TAG = "LogViewerFragment"
+    private var mGraph: SwitchGraph? = null
+    private var mButtons: LinearLayout? = null
+    private var mPortrait: Boolean = false
+    private var mLoadLast: Boolean = false
     private lateinit var mViewModel: LogViewerViewModel
 
-    var resultPickLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val uri: Uri? = result.data?.data
-            uri?.let {
-                loadLogViewerCSV(uri)
-                Toast.makeText(activity, "Success", Toast.LENGTH_SHORT).show()
-            }?: Toast.makeText(activity, "Failed", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(activity, "Failed", Toast.LENGTH_SHORT).show()
+    var resultPickLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val uri: Uri? = result.data?.data
+                uri?.let {
+                    loadLogViewerCSV(uri)
+                    Toast.makeText(activity, "Success", Toast.LENGTH_SHORT).show()
+                } ?: Toast.makeText(activity, "Failed", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(activity, "Failed", Toast.LENGTH_SHORT).show()
+            }
         }
-    }
 
     override fun onDestroy() {
         super.onDestroy()
@@ -86,11 +88,11 @@ class LogViewerFragment: Fragment() {
                 mButtons?.let {
                     if (it.isVisible) {
                         it.isVisible = false
-                        text = if(mPortrait) getString(R.string.button_arrow_up)
+                        text = if (mPortrait) getString(R.string.button_arrow_up)
                         else getString(R.string.button_arrow_left)
                     } else {
                         it.isVisible = true
-                        text = if(mPortrait) getString(R.string.button_arrow_down)
+                        text = if (mPortrait) getString(R.string.button_arrow_down)
                         else getString(R.string.button_arrow_right)
                     }
 
@@ -162,7 +164,7 @@ class LogViewerFragment: Fragment() {
         mGraph?.setTextBGColor(ColorList.BG_NORMAL.value)
         checkOrientation()
 
-        if(gLogViewerLoadLast) {
+        if (gLogViewerLoadLast) {
             loadLastFile()
         }
 
@@ -209,7 +211,7 @@ class LogViewerFragment: Fragment() {
     }
 
     private fun loadLastFile() {
-        if(LogFile.getLastUri() != null) loadLogViewerCSV(LogFile.getLastUri())
+        if (LogFile.getLastUri() != null) loadLogViewerCSV(LogFile.getLastUri())
         else loadLogViewerCSV(LogFile.getLastFile())
 
         mGraph?.invalidate()
@@ -222,11 +224,12 @@ class LogViewerFragment: Fragment() {
         if (ConfigSettings.ALWAYS_PORTRAIT.toBoolean())
             currentOrientation = Configuration.ORIENTATION_PORTRAIT
 
-        when(currentOrientation) {
+        when (currentOrientation) {
             Configuration.ORIENTATION_LANDSCAPE -> {
                 mGraph?.setTextPerLine(3)
                 mPortrait = false
             }
+
             Configuration.ORIENTATION_PORTRAIT -> {
                 mGraph?.setTextPerLine(2)
                 mPortrait = true
@@ -243,7 +246,7 @@ class LogViewerFragment: Fragment() {
             var fileData = inputStream.readBytes()
             inputStream.close()
 
-            if(fileData.count() > MAX_LOG_SIZE)
+            if (fileData.count() > MAX_LOG_SIZE)
                 fileData = fileData.copyOfRange(0, MAX_LOG_SIZE)
 
             loadLogViewerCSV(String(fileData))
@@ -277,12 +280,12 @@ class LogViewerFragment: Fragment() {
             do {
                 val lineItem = dataLine.substringBefore(",", "")
                 dataLine = dataLine.substringAfter(",", "")
-                if(lineItem.isNotEmpty())
+                if (lineItem.isNotEmpty())
                     lineItems += lineItem
             } while (dataLine.isNotEmpty())
 
             //Are we reading the header?
-            if(!readHeader) {
+            if (!readHeader) {
                 readHeader = true
                 gLogViewerData = null
 
@@ -293,12 +296,24 @@ class LogViewerFragment: Fragment() {
                         val g = (random() * 255).toFloat()
                         val b = (random() * 255).toFloat()
                         var foundPID = false
-                        logViewerData[i] = LogViewerDataStruct(lineItems[i], "", 0f, 0f, false, Color.rgb(r, g, b), "%01.1f", floatArrayOf())
+                        logViewerData[i] = LogViewerDataStruct(
+                            lineItems[i],
+                            "",
+                            0f,
+                            0f,
+                            false,
+                            Color.rgb(r, g, b),
+                            "%01.1f",
+                            floatArrayOf()
+                        )
                         PIDs.getList()?.let { pidList ->
                             pidList.forEach { pid ->
-                                if(!foundPID) {
+                                if (!foundPID) {
                                     pid?.let {
-                                        if (lineItems[i].contains(pid.name) && lineItems[i].substringBefore(pid.name) == "") {
+                                        if (lineItems[i].contains(pid.name) && lineItems[i].substringBefore(
+                                                pid.name
+                                            ) == ""
+                                        ) {
                                             logViewerData[i]?.min = pid.progMin
                                             logViewerData[i]?.max = pid.progMax
                                             logViewerData[i]?.enabled = true
@@ -311,10 +326,10 @@ class LogViewerFragment: Fragment() {
                             }
                         }
                         //Look through dsg list
-                        if(!foundPID) {
+                        if (!foundPID) {
                             PIDs.listDSG?.let { pidList ->
                                 pidList.forEach { pid ->
-                                    if(!foundPID) {
+                                    if (!foundPID) {
                                         pid?.let {
                                             if (lineItems[i].contains(pid.name)) {
                                                 logViewerData[i]?.min = pid.progMin
@@ -365,11 +380,11 @@ class LogViewerFragment: Fragment() {
                 }
                 readFirst = true
             }
-        } while(fileData.isNotEmpty())
+        } while (fileData.isNotEmpty())
 
         gLogViewerData?.let { logViewerData ->
             logViewerData.forEach {
-                it?.enabled = (it?.tabs?.contains("Default")?:false)
+                it?.enabled = (it?.tabs?.contains("Default") ?: false)
             }
         }
 

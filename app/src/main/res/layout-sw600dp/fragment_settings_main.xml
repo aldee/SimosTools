@@ -1,33 +1,33 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/layoutSettingsMain"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".SettingsMainFragment"
-    android:id="@+id/layoutSettingsMain">
+    tools:context=".SettingsMainFragment">
 
     <LinearLayout
-        android:layout_height="match_parent"
         android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:orientation="vertical">
 
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabLayoutSettings"
-            android:layout_height="64dp"
             android:layout_width="match_parent"
+            android:layout_height="64dp"
             android:background="@color/colorPrimary"
-            app:tabTextColor="#fff"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:tabMode="scrollable"
-            app:tabTextAppearance="@style/TabTextLoggingLarge" />
+            app:tabTextAppearance="@style/TabTextLoggingLarge"
+            app:tabTextColor="#fff" />
 
         <androidx.viewpager2.widget.ViewPager2
             android:id="@+id/viewPagerSettings"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginBottom="96dp"/>
+            android:layout_marginBottom="96dp" />
 
     </LinearLayout>
 
@@ -48,7 +48,7 @@
         android:text="@string/button_save"
         android:textSize="42sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/buttonSettingsBack"/>
+        app:layout_constraintEnd_toStartOf="@+id/buttonSettingsBack"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,30 +2,30 @@ package com.app.simostools
 
 import android.content.Context
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.ItemTouchHelper
 
 object TempPIDS {
-    var list22: Array<PIDStruct?>?  = null
-    var list3E: Array<PIDStruct?>?  = null
+    var list22: Array<PIDStruct?>? = null
+    var list3E: Array<PIDStruct?>? = null
     var listDSG: Array<PIDStruct?>? = null
 
     fun reset(context: Context?) {
         context?.let {
-            list22  = PIDs.list22?.clone()
-            list3E  = PIDs.list3E?.clone()
+            list22 = PIDs.list22?.clone()
+            list3E = PIDs.list3E?.clone()
             listDSG = PIDs.listDSG?.clone()
         }
     }
 
     fun clear() {
-        list22  = arrayOfNulls(0)
-        list3E  = arrayOfNulls(0)
+        list22 = arrayOfNulls(0)
+        list3E = arrayOfNulls(0)
         listDSG = arrayOfNulls(0)
     }
 
@@ -44,39 +44,40 @@ object TempPIDS {
                     UDSLoggingMode.MODE_3E.cfgName
                 ), context, list3E, true
             )
-            PIDCSVFile.write(context.getString(R.string.filename_pid_csv, "DSG"), context, listDSG, true
+            PIDCSVFile.write(
+                context.getString(R.string.filename_pid_csv, "DSG"), context, listDSG, true
             )
         }
     }
 }
 
-class SettingsMode22Fragment: SettingsLoggingFragment() {
-    override val TAG        = "Settings22"
-    override val mMode      = UDSLoggingMode.MODE_22
-    override val mLayout    = R.layout.fragment_settings_mode22
+class SettingsMode22Fragment : SettingsLoggingFragment() {
+    override val TAG = "Settings22"
+    override val mMode = UDSLoggingMode.MODE_22
+    override val mLayout = R.layout.fragment_settings_mode22
 }
 
-class SettingsMode3EFragment: SettingsLoggingFragment() {
-    override val TAG        = "Settings3E"
-    override val mMode      = UDSLoggingMode.MODE_3E
-    override val mLayout    = R.layout.fragment_settings_mode3e
+class SettingsMode3EFragment : SettingsLoggingFragment() {
+    override val TAG = "Settings3E"
+    override val mMode = UDSLoggingMode.MODE_3E
+    override val mLayout = R.layout.fragment_settings_mode3e
 }
 
-class SettingsModeDSGFragment: SettingsLoggingFragment() {
-    override val TAG        = "SettingsDSG"
-    override val mMode      = UDSLoggingMode.MODE_22
-    override val mLayout    = R.layout.fragment_settings_modedsg
-    override val mDSG       = true
+class SettingsModeDSGFragment : SettingsLoggingFragment() {
+    override val TAG = "SettingsDSG"
+    override val mMode = UDSLoggingMode.MODE_22
+    override val mLayout = R.layout.fragment_settings_modedsg
+    override val mDSG = true
 }
 
 open class SettingsLoggingFragment : Fragment() {
-    open val TAG                                    = "Settings"
-    open val mMode                                  = UDSLoggingMode.MODE_22
-    open val mDSG                                   = false
-    open val mLayout                                = R.layout.fragment_settings_mode22
-    open val mPIDLayout                             = R.id.recycleViewPID
-    private var mPIDAdapter: SettingsViewAdapter?   = null
-    private var mPIDLayouts: Array<View?>?          = null
+    open val TAG = "Settings"
+    open val mMode = UDSLoggingMode.MODE_22
+    open val mDSG = false
+    open val mLayout = R.layout.fragment_settings_mode22
+    open val mPIDLayout = R.id.recycleViewPID
+    private var mPIDAdapter: SettingsViewAdapter? = null
+    private var mPIDLayouts: Array<View?>? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -113,7 +114,7 @@ open class SettingsLoggingFragment : Fragment() {
 
     fun doSave() {
         mPIDAdapter?.let { adapter ->
-            for (i in 0 until adapter.itemCount-1) {
+            for (i in 0 until adapter.itemCount - 1) {
                 adapter.saveData()
             }
         }
@@ -127,7 +128,7 @@ open class SettingsLoggingFragment : Fragment() {
             // set up the RecyclerView
             val recyclerView: RecyclerView = currentView.findViewById(R.id.recycleViewPID)
             recyclerView.layoutManager = LinearLayoutManager(context)
-            mPIDAdapter = if(mDSG) SettingsViewAdapter(context, TempPIDS.listDSG)
+            mPIDAdapter = if (mDSG) SettingsViewAdapter(context, TempPIDS.listDSG)
             else when (mMode) {
                 UDSLoggingMode.MODE_22 -> SettingsViewAdapter(context, TempPIDS.list22)
                 UDSLoggingMode.MODE_3E -> SettingsViewAdapter(context, TempPIDS.list3E)

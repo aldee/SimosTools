@@ -9,11 +9,11 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.Fragment
-import android.widget.*
+import android.widget.ListView
+import android.widget.ProgressBar
 import androidx.core.content.ContextCompat.startForegroundService
-import android.widget.ArrayAdapter
 import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
@@ -41,7 +41,11 @@ class UtilitiesFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         mViewModel = ViewModelProvider(this).get(UtilitiesViewModel::class.java)
 
-        mArrayAdapter = SwitchArrayAdapter(requireContext(), R.layout.fragment_message, gUtilitiesMsgList?: arrayOf())
+        mArrayAdapter = SwitchArrayAdapter(
+            requireContext(),
+            R.layout.fragment_message,
+            gUtilitiesMsgList ?: arrayOf()
+        )
         mArrayAdapter?.let { adapter ->
             gUtilitiesMsgList?.forEach {
                 adapter.add(it)
@@ -146,22 +150,48 @@ class UtilitiesFragment : Fragment() {
         override fun onReceive(context: Context?, intent: Intent) {
             DebugLog.d(TAG, "Utility Fragment received action: " + intent.action.toString())
             when (intent.action) {
-                GUIMessage.STATE_CONNECTION.toString()      -> mViewModel.connectionState = intent.getSerializableExtra(GUIMessage.STATE_CONNECTION.toString()) as BLEConnectionState
-                GUIMessage.STATE_TASK.toString()            -> mViewModel.connectionState = BLEConnectionState.CONNECTED
-                GUIMessage.UTILITY_INFO.toString()          -> doWriteMessage(intent.getStringExtra(GUIMessage.UTILITY_INFO.toString())?: "")
-                GUIMessage.UTILITY_INFO_CLEAR.toString()    -> doClearMessages()
-                GUIMessage.UTILITY_PROGRESS.toString()      -> setProgressBar(intent.getIntExtra(GUIMessage.UTILITY_PROGRESS.toString(), 0))
-                GUIMessage.UTILITY_PROGRESS_MAX.toString()  -> setProgressBarMax(intent.getIntExtra(GUIMessage.UTILITY_PROGRESS_MAX.toString(), 0))
-                GUIMessage.UTILITY_PROGRESS_SHOW.toString() -> setProgressBarShow(intent.getBooleanExtra(GUIMessage.UTILITY_PROGRESS_SHOW.toString(), false))
+                GUIMessage.STATE_CONNECTION.toString() -> mViewModel.connectionState =
+                    intent.getSerializableExtra(GUIMessage.STATE_CONNECTION.toString()) as BLEConnectionState
+
+                GUIMessage.STATE_TASK.toString() -> mViewModel.connectionState =
+                    BLEConnectionState.CONNECTED
+
+                GUIMessage.UTILITY_INFO.toString() -> doWriteMessage(
+                    intent.getStringExtra(
+                        GUIMessage.UTILITY_INFO.toString()
+                    ) ?: ""
+                )
+
+                GUIMessage.UTILITY_INFO_CLEAR.toString() -> doClearMessages()
+                GUIMessage.UTILITY_PROGRESS.toString() -> setProgressBar(
+                    intent.getIntExtra(
+                        GUIMessage.UTILITY_PROGRESS.toString(),
+                        0
+                    )
+                )
+
+                GUIMessage.UTILITY_PROGRESS_MAX.toString() -> setProgressBarMax(
+                    intent.getIntExtra(
+                        GUIMessage.UTILITY_PROGRESS_MAX.toString(),
+                        0
+                    )
+                )
+
+                GUIMessage.UTILITY_PROGRESS_SHOW.toString() -> setProgressBarShow(
+                    intent.getBooleanExtra(
+                        GUIMessage.UTILITY_PROGRESS_SHOW.toString(),
+                        false
+                    )
+                )
             }
         }
     }
 
-    private fun clickDTC(clear: Boolean):Boolean {
-        var dtcString = if(clear) "Clear DTC\n---------------"
-            else "Get DTC\n---------------"
+    private fun clickDTC(clear: Boolean): Boolean {
+        var dtcString = if (clear) "Clear DTC\n---------------"
+        else "Get DTC\n---------------"
         if (mViewModel.connectionState == BLEConnectionState.CONNECTED) {
-            if(clear) sendServiceMessage(BTServiceTask.DO_CLEAR_DTC.toString())
+            if (clear) sendServiceMessage(BTServiceTask.DO_CLEAR_DTC.toString())
             else sendServiceMessage(BTServiceTask.DO_GET_DTC.toString())
         } else {
             dtcString += "\nNot connected."
@@ -184,7 +214,7 @@ class UtilitiesFragment : Fragment() {
 
     private fun doWriteMessage(message: String) {
         // construct a string from the valid bytes in the buffer
-        val value = gUtilitiesMsgList?: arrayOf()
+        val value = gUtilitiesMsgList ?: arrayOf()
         gUtilitiesMsgList = value + message
         mArrayAdapter?.let {
             it.add(message)

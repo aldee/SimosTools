@@ -15,7 +15,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <ProgressBar
         android:id="@+id/progressBarUtilities"
@@ -23,10 +23,10 @@
         android:layout_width="0dp"
         android:layout_height="48dp"
         android:scaleY="6.0"
-        app:layout_constraintTop_toBottomOf="@+id/listViewMessage"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/listViewMessage" />
 
     <com.app.simostools.SwitchButton
         android:id="@+id/buttonGetDTC"
@@ -34,10 +34,10 @@
         android:layout_height="96dp"
         android:text="@string/button_dtc_get"
         android:textSize="32sp"
+        app:layout_constraintBottom_toTopOf="@+id/buttonGetInfo"
         app:layout_constraintEnd_toStartOf="@+id/buttonClearDTC"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/progressBarUtilities"
-        app:layout_constraintBottom_toTopOf="@+id/buttonGetInfo"/>
+        app:layout_constraintTop_toBottomOf="@+id/progressBarUtilities" />
 
     <com.app.simostools.SwitchButton
         android:id="@+id/buttonClearDTC"
@@ -57,9 +57,9 @@
         android:text="@string/button_get_info"
         android:textSize="32sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/buttonBack"
-        app:layout_constraintTop_toBottomOf="@+id/buttonGetDTC"/>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/buttonGetDTC" />
 
     <com.app.simostools.SwitchButton
         android:id="@+id/buttonBack"
@@ -70,6 +70,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/buttonGetInfo"
-        app:layout_constraintTop_toBottomOf="@+id/buttonClearDTC"/>
+        app:layout_constraintTop_toBottomOf="@+id/buttonClearDTC" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,17 +1,27 @@
 package com.app.simostools
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
 
-class SwitchCockpit: View {
+class SwitchCockpit : View {
     constructor(context: Context) : super(context) {
     }
+
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
     }
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
+
+    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(
+        context,
+        attrs,
+        defStyleAttr
+    ) {
     }
+
     private val bgPaint: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL_AND_STROKE
         color = Color.BLACK
@@ -28,32 +38,32 @@ class SwitchCockpit: View {
         strokeWidth = 50.0f
     }
     private val boostPaint: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style       = Paint.Style.FILL_AND_STROKE
-        color       = Color.WHITE
+        style = Paint.Style.FILL_AND_STROKE
+        color = Color.WHITE
         strokeWidth = 1.0f
     }
     private val rpmPaint: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style       = Paint.Style.FILL_AND_STROKE
-        color       = Color.WHITE
+        style = Paint.Style.FILL_AND_STROKE
+        color = Color.WHITE
         strokeWidth = 1.0f
     }
     private val textPaint: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style       = Paint.Style.FILL_AND_STROKE
-        color       = Color.WHITE
+        style = Paint.Style.FILL_AND_STROKE
+        color = Color.WHITE
         strokeWidth = 1.0f
-        textSize    = 30f
-        textAlign   = Paint.Align.CENTER
+        textSize = 30f
+        textAlign = Paint.Align.CENTER
     }
-    private var mCurrentWidth                       = 0f
-    private var mCurrentHeight                      = 0f
-    private var mCurrentWidthCenter                 = 0f
-    private var mCurrentHeightCenter                = 0f
-    private var mRect                               = RectF()
-    var dataVelocity                                = 0f
-    var dataRPM                                     = 0f
-    var dataBoost                                   = 0f
-    var dataAccelerationLatitude                    = 0f
-    var dataAccelerationLongitude                   = 0f
+    private var mCurrentWidth = 0f
+    private var mCurrentHeight = 0f
+    private var mCurrentWidthCenter = 0f
+    private var mCurrentHeightCenter = 0f
+    private var mRect = RectF()
+    var dataVelocity = 0f
+    var dataRPM = 0f
+    var dataBoost = 0f
+    var dataAccelerationLatitude = 0f
+    var dataAccelerationLongitude = 0f
 
     fun doDraw() {
         invalidate()
@@ -70,14 +80,32 @@ class SwitchCockpit: View {
 
         boostPaint.color = Color.GREEN
         rpmPaint.color = Color.GREEN
-        for(i in 0 .. boostSegmentCount) {
-            if(i >= boostAmount.toInt()) boostPaint.color = Color.WHITE
-            else boostPaint.color = Color.rgb(colorSegment * i.toFloat(), 1f - (colorSegment * i.toFloat()), 0f)
-            if(i >= rpmAmount.toInt()) rpmPaint.color = Color.WHITE
-            else rpmPaint.color = Color.rgb(colorSegment * i.toFloat(), 1f - (colorSegment * i.toFloat()), 0f)
+        for (i in 0..boostSegmentCount) {
+            if (i >= boostAmount.toInt()) boostPaint.color = Color.WHITE
+            else boostPaint.color =
+                Color.rgb(colorSegment * i.toFloat(), 1f - (colorSegment * i.toFloat()), 0f)
+            if (i >= rpmAmount.toInt()) rpmPaint.color = Color.WHITE
+            else rpmPaint.color =
+                Color.rgb(colorSegment * i.toFloat(), 1f - (colorSegment * i.toFloat()), 0f)
 
-            canvas.drawRoundRect(mCurrentWidthCenter - 300f, mCurrentHeightCenter + 140f - (boostSegmentSize * (i - 0.5f)), mCurrentWidthCenter - 100f, mCurrentHeightCenter + 140f - (boostSegmentSize * i), 50f, 50f, boostPaint)
-            canvas.drawRoundRect(mCurrentWidthCenter + 300f, mCurrentHeightCenter + 140f - (boostSegmentSize * (i - 0.5f)), mCurrentWidthCenter + 100f, mCurrentHeightCenter + 140f - (boostSegmentSize * i), 50f, 50f, rpmPaint)
+            canvas.drawRoundRect(
+                mCurrentWidthCenter - 300f,
+                mCurrentHeightCenter + 140f - (boostSegmentSize * (i - 0.5f)),
+                mCurrentWidthCenter - 100f,
+                mCurrentHeightCenter + 140f - (boostSegmentSize * i),
+                50f,
+                50f,
+                boostPaint
+            )
+            canvas.drawRoundRect(
+                mCurrentWidthCenter + 300f,
+                mCurrentHeightCenter + 140f - (boostSegmentSize * (i - 0.5f)),
+                mCurrentWidthCenter + 100f,
+                mCurrentHeightCenter + 140f - (boostSegmentSize * i),
+                50f,
+                50f,
+                rpmPaint
+            )
         }
 
         canvas.drawCircle(mCurrentWidthCenter, mCurrentHeightCenter, 200f, bgPaint)
@@ -89,17 +117,33 @@ class SwitchCockpit: View {
         val angleSegment = 260f / angleSegmentCount
         val amount = velocity / 220f * angleSegmentCount
         val strokeWidth = linePaint.strokeWidth / 2.0f
-        mRect.set(mCurrentWidthCenter - 200f, mCurrentHeightCenter - 200f, 200f + mCurrentWidthCenter, 200f + mCurrentHeightCenter)
+        mRect.set(
+            mCurrentWidthCenter - 200f,
+            mCurrentHeightCenter - 200f,
+            200f + mCurrentWidthCenter,
+            200f + mCurrentHeightCenter
+        )
 
         gaugeRing.color = Color.RED
-        for(i in 0 .. angleSegmentCount) {
-            if(i == amount.toInt())
+        for (i in 0..angleSegmentCount) {
+            if (i == amount.toInt())
                 gaugeRing.color = Color.WHITE
-            canvas.drawArc(mRect, angleStart+(angleSegment * i)-(angleSegment*0.25f), angleSegment * 0.5f, false, gaugeRing)
+            canvas.drawArc(
+                mRect,
+                angleStart + (angleSegment * i) - (angleSegment * 0.25f),
+                angleSegment * 0.5f,
+                false,
+                gaugeRing
+            )
         }
     }
 
-    private fun drawAccelerationGauge(canvas: Canvas, latitude: Float, longitude: Float, size: Float) {
+    private fun drawAccelerationGauge(
+        canvas: Canvas,
+        latitude: Float,
+        longitude: Float,
+        size: Float
+    ) {
 
     }
 
@@ -108,7 +152,7 @@ class SwitchCockpit: View {
         canvas.drawText(
             "$velocity Km/h",
             mCurrentWidthCenter,
-            mCurrentHeightCenter+(100f*size),
+            mCurrentHeightCenter + (100f * size),
             textPaint
         )
     }

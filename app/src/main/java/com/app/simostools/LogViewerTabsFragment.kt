@@ -14,9 +14,9 @@ import androidx.navigation.fragment.findNavController
 class LogViewerTabsViewModel : ViewModel() {
 }
 
-class LogViewerTabsFragment: Fragment() {
-    private var TAG                                                         = "LogViewerLayoutFragment"
-    private var mTabsList:Array<androidx.appcompat.widget.SwitchCompat?>? = null
+class LogViewerTabsFragment : Fragment() {
+    private var TAG = "LogViewerLayoutFragment"
+    private var mTabsList: Array<androidx.appcompat.widget.SwitchCompat?>? = null
     private lateinit var mViewModel: LogViewerTabsViewModel
 
     override fun onDestroy() {
@@ -77,7 +77,7 @@ class LogViewerTabsFragment: Fragment() {
 
         gLogViewerData?.let { logViewerData ->
             val lLayout = view.findViewById<LinearLayout>(R.id.logviewerLayoutScroll)
-            var tabStrings:Array<String> = arrayOf()
+            var tabStrings: Array<String> = arrayOf()
             tabStrings += "Default"
             logViewerData.forEachIndexed() { i, pid ->
                 pid?.tabs?.split(".")?.forEach { tab ->

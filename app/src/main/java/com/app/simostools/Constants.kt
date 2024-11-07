@@ -8,11 +8,8 @@ import android.graphics.Color
 import android.graphics.Rect
 import android.os.Build
 import android.os.Environment
-import android.util.DisplayMetrics
-import android.view.WindowManager
-import android.widget.Toast
 import androidx.annotation.RequiresApi
-import java.util.*
+import java.util.UUID
 
 // Message types sent from the BluetoothChatService Handler
 enum class GUIMessage {
@@ -80,15 +77,58 @@ enum class BTServiceTask {
 }
 
 //Intent constants
-enum class RequiredPermissions(val permission: String, val version: Int, val required: Boolean, var result: Int) {
+enum class RequiredPermissions(
+    val permission: String,
+    val version: Int,
+    val required: Boolean,
+    var result: Int
+) {
     BT(Manifest.permission.BLUETOOTH, 0, true, PackageManager.PERMISSION_DENIED),
-    @RequiresApi(Build.VERSION_CODES.S) BT_ADVERTISE(Manifest.permission.BLUETOOTH_ADVERTISE, Build.VERSION_CODES.S, true, PackageManager.PERMISSION_DENIED),
-    @RequiresApi(Build.VERSION_CODES.S) BT_SCAN(Manifest.permission.BLUETOOTH_SCAN, Build.VERSION_CODES.S, true, PackageManager.PERMISSION_DENIED),
-    @RequiresApi(Build.VERSION_CODES.S) BT_CONNECT(Manifest.permission.BLUETOOTH_CONNECT, Build.VERSION_CODES.S, true, PackageManager.PERMISSION_DENIED),
-    FINE_LOCATION(Manifest.permission.ACCESS_FINE_LOCATION, 0, true, PackageManager.PERMISSION_DENIED),
-    COARSE_LOCATION(Manifest.permission.ACCESS_COARSE_LOCATION, 0, true, PackageManager.PERMISSION_DENIED),
-    READ_STORAGE(Manifest.permission.READ_EXTERNAL_STORAGE, 0, false, PackageManager.PERMISSION_DENIED),
-    WRITE_STORAGE(Manifest.permission.WRITE_EXTERNAL_STORAGE, 0, false, PackageManager.PERMISSION_DENIED),
+    @RequiresApi(Build.VERSION_CODES.S)
+    BT_ADVERTISE(
+        Manifest.permission.BLUETOOTH_ADVERTISE,
+        Build.VERSION_CODES.S,
+        true,
+        PackageManager.PERMISSION_DENIED
+    ),
+    @RequiresApi(Build.VERSION_CODES.S)
+    BT_SCAN(
+        Manifest.permission.BLUETOOTH_SCAN,
+        Build.VERSION_CODES.S,
+        true,
+        PackageManager.PERMISSION_DENIED
+    ),
+    @RequiresApi(Build.VERSION_CODES.S)
+    BT_CONNECT(
+        Manifest.permission.BLUETOOTH_CONNECT,
+        Build.VERSION_CODES.S,
+        true,
+        PackageManager.PERMISSION_DENIED
+    ),
+    FINE_LOCATION(
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        0,
+        true,
+        PackageManager.PERMISSION_DENIED
+    ),
+    COARSE_LOCATION(
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+        0,
+        true,
+        PackageManager.PERMISSION_DENIED
+    ),
+    READ_STORAGE(
+        Manifest.permission.READ_EXTERNAL_STORAGE,
+        0,
+        false,
+        PackageManager.PERMISSION_DENIED
+    ),
+    WRITE_STORAGE(
+        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+        0,
+        false,
+        PackageManager.PERMISSION_DENIED
+    ),
 }
 
 //ISOTP bridge command flags
@@ -131,98 +171,84 @@ enum class UDSReturn {
 }
 
 enum class ECUInfo(val str: String, val address: ByteArray) {
-    VIN("VIN", byteArrayOf(0xf1.toByte(), 0x90.toByte()))
-    {
+    VIN("VIN", byteArrayOf(0xf1.toByte(), 0x90.toByte())) {
         override fun parseResponse(response: ByteArray): String {
             return String(response)
         }
     },
-    ODX_IDENTIFIER("ASAM/ODX File Identifier", byteArrayOf(0xF1.toByte(), 0x9E.toByte()))
-    {
+    ODX_IDENTIFIER("ASAM/ODX File Identifier", byteArrayOf(0xF1.toByte(), 0x9E.toByte())) {
         override fun parseResponse(response: ByteArray): String {
             return String(response)
         }
     },
-    ODX_VERSION("ASAM/ODX File Version", byteArrayOf(0xF1.toByte(), 0xA2.toByte()))
-    {
+    ODX_VERSION("ASAM/ODX File Version", byteArrayOf(0xF1.toByte(), 0xA2.toByte())) {
         override fun parseResponse(response: ByteArray): String {
             return String(response)
         }
     },
-    VEHICLE_SPEED("Vehicle Speed", byteArrayOf(0xF4.toByte(), 0x0D.toByte()))
-    {
+    VEHICLE_SPEED("Vehicle Speed", byteArrayOf(0xF4.toByte(), 0x0D.toByte())) {
         override fun parseResponse(response: ByteArray): String {
             return response.toHex()
         }
     },
-    CAL_NUMBER("Calibration Version Numbers", byteArrayOf(0xF8.toByte(), 0x06.toByte()))
-    {
+    CAL_NUMBER("Calibration Version Numbers", byteArrayOf(0xF8.toByte(), 0x06.toByte())) {
         override fun parseResponse(response: ByteArray): String {
             return response.toHex()
         }
     },
-    PART_NUMBER("VW Spare part Number", byteArrayOf(0xF1.toByte(), 0x87.toByte()))
-    {
+    PART_NUMBER("VW Spare part Number", byteArrayOf(0xF1.toByte(), 0x87.toByte())) {
         override fun parseResponse(response: ByteArray): String {
             return String(response)
         }
     },
-    ASW_VERSION("VW ASW Version", byteArrayOf(0xF1.toByte(), 0x89.toByte()))
-    {
+    ASW_VERSION("VW ASW Version", byteArrayOf(0xF1.toByte(), 0x89.toByte())) {
         override fun parseResponse(response: ByteArray): String {
             return String(response)
         }
     },
-    HW_NUMBER("ECU Hardware Number", byteArrayOf(0xF1.toByte(), 0x91.toByte()))
-    {
+    HW_NUMBER("ECU Hardware Number", byteArrayOf(0xF1.toByte(), 0x91.toByte())) {
         override fun parseResponse(response: ByteArray): String {
             return String(response)
         }
     },
-    HW_VERSION("ECU Hardware Version Number", byteArrayOf(0xF1.toByte(), 0xA3.toByte()))
-    {
+    HW_VERSION("ECU Hardware Version Number", byteArrayOf(0xF1.toByte(), 0xA3.toByte())) {
         override fun parseResponse(response: ByteArray): String {
             return String(response)
         }
     },
-    ENGINE_CODE("Engine Code", byteArrayOf(0xF1.toByte(), 0xAD.toByte()))
-    {
+    ENGINE_CODE("Engine Code", byteArrayOf(0xF1.toByte(), 0xAD.toByte())) {
         override fun parseResponse(response: ByteArray): String {
             return String(response)
         }
     },
-    WORKSHOP_NAME("VW Workshop Name", byteArrayOf(0xF1.toByte(), 0xAA.toByte()))
-    {
+    WORKSHOP_NAME("VW Workshop Name", byteArrayOf(0xF1.toByte(), 0xAA.toByte())) {
         override fun parseResponse(response: ByteArray): String {
             return String(response)
         }
     },
-    FLASH_STATE("State of Flash Mem", byteArrayOf(0x04.toByte(), 0x05.toByte()))
-    {
+    FLASH_STATE("State of Flash Mem", byteArrayOf(0x04.toByte(), 0x05.toByte())) {
         override fun parseResponse(response: ByteArray): String {
             return response.toHex()
         }
     },
-    CODE_VALUE("VW Coding Value", byteArrayOf(0x06.toByte(), 0x00.toByte()))
-    {
+    CODE_VALUE("VW Coding Value", byteArrayOf(0x06.toByte(), 0x00.toByte())) {
         override fun parseResponse(response: ByteArray): String {
             return response.toHex()
         }
     },
-    WORKSHOP_CODE("Workshop Code", byteArrayOf(0xF1.toByte(), 0x5B.toByte()))
-    {
+    WORKSHOP_CODE("Workshop Code", byteArrayOf(0xF1.toByte(), 0x5B.toByte())) {
         override fun parseResponse(response: ByteArray): String {
             var parsed = "\n"
-            for(i in 0..4){
+            for (i in 0..4) {
                 parsed += "Block: ${i + 1} : "
 
                 var thisBlock = response.copyOfRange((10 * i + 0), (10 * i + 10))
                 parsed += 2000 + convertFromBCD(thisBlock[0])
                 parsed += "_" + convertFromBCD(thisBlock[1])
                 parsed += "_" + convertFromBCD(thisBlock[2])
-                parsed += " : " + thisBlock.copyOfRange(3,4).toHex()
-                parsed += " : " + String(thisBlock.copyOfRange(4,8))
-                parsed += " : " + thisBlock.copyOfRange(8,9).toHex()
+                parsed += " : " + thisBlock.copyOfRange(3, 4).toHex()
+                parsed += " : " + String(thisBlock.copyOfRange(4, 8))
+                parsed += " : " + thisBlock.copyOfRange(8, 9).toHex()
 
 
 
@@ -236,7 +262,7 @@ enum class ECUInfo(val str: String, val address: ByteArray) {
     abstract fun parseResponse(response: ByteArray): String
 }
 
-val TUNE_INFO_PIDS = intArrayOf(8,10,5,13)
+val TUNE_INFO_PIDS = intArrayOf(8, 10, 5, 13)
 
 enum class FLASH_ECU_CAL_SUBTASK {
     PATCH_BLOCK,
@@ -259,12 +285,12 @@ enum class FLASH_ECU_CAL_SUBTASK {
 
     fun next(): FLASH_ECU_CAL_SUBTASK {
         val vals = values()
-        return vals[(this.ordinal+1) % vals.size]
+        return vals[(this.ordinal + 1) % vals.size]
 
     }
 }
 
-enum class FLASH_ECU_ACTION(){
+enum class FLASH_ECU_ACTION() {
     NONE,
     FLASH,
     PATCH,
@@ -273,23 +299,23 @@ enum class FLASH_ECU_ACTION(){
 //Color List
 enum class ColorList(var value: Int, val cfgName: String) {
     BG_NORMAL(Color.rgb(64, 64, 64), "BGNormal"),
-    BG_WARN(Color.rgb(127, 127, 255),"BGWarn"),
-    TEXT(Color.rgb(255,   255,   255), "Text"),
-    GAUGE_NORMAL(Color.rgb(0,   255, 0), "GaugeNormal"),
-    GAUGE_WARN(Color.rgb(255, 0,   0), "GaugeWarn"),
-    GAUGE_BG(Color.rgb(0, 0,   0), "GaugeBG"),
-    GAUGE_VALUE(Color.rgb(255, 255,   255), "GaugeValue"),
-    ST_ERROR(Color.rgb(255, 32,   0), "StateError"),
-    ST_NONE(Color.rgb(255, 0,   0), "StateNone"),
+    BG_WARN(Color.rgb(127, 127, 255), "BGWarn"),
+    TEXT(Color.rgb(255, 255, 255), "Text"),
+    GAUGE_NORMAL(Color.rgb(0, 255, 0), "GaugeNormal"),
+    GAUGE_WARN(Color.rgb(255, 0, 0), "GaugeWarn"),
+    GAUGE_BG(Color.rgb(0, 0, 0), "GaugeBG"),
+    GAUGE_VALUE(Color.rgb(255, 255, 255), "GaugeValue"),
+    ST_ERROR(Color.rgb(255, 32, 0), "StateError"),
+    ST_NONE(Color.rgb(255, 0, 0), "StateNone"),
     ST_CONNECTING(Color.rgb(255, 32, 32), "StateConnecting"),
-    ST_CONNECTED(Color.rgb(0,   255,   0), "StateConnected"),
+    ST_CONNECTED(Color.rgb(0, 255, 0), "StateConnected"),
     ST_LOGGING(Color.rgb(32, 255, 0), "StateLogging"),
-    ST_WRITING(Color.rgb(0,   0, 255), "StateWriting"),
+    ST_WRITING(Color.rgb(0, 0, 255), "StateWriting"),
     BT_RIM(Color.rgb(110, 140, 255), "ButtonRIm"),
-    BT_RIM_ALERT(Color.rgb(255,204, 0), "ButtonRimAlert"),
+    BT_RIM_ALERT(Color.rgb(255, 204, 0), "ButtonRimAlert"),
     BT_TEXT(Color.rgb(255, 255, 255), "ButtonText"),
-    BT_BG(Color.rgb(64,   64, 64), "ButtonBG"),
-    BT_BG_ALERT(Color.rgb(255,165,0), "ButtonBGAlert");
+    BT_BG(Color.rgb(64, 64, 64), "ButtonBG"),
+    BT_BG_ALERT(Color.rgb(255, 165, 0), "ButtonBGAlert");
 
     val key = "Color"
 }
@@ -304,19 +330,19 @@ enum class UDSLoggingMode(val cfgName: String, val addressMin: Long, val address
 
 enum class GearRatios(val gear: String, var ratio: Float) {
     GEAR1("1", 2.92f),
-    GEAR2("2",1.79f),
-    GEAR3("3",1.14f),
-    GEAR4("4",0.78f),
-    GEAR5("5",0.58f),
-    GEAR6("6",0.46f),
-    GEAR7("7",0.0f),
-    FINAL("Final",4.77f);
+    GEAR2("2", 1.79f),
+    GEAR3("3", 1.14f),
+    GEAR4("4", 0.78f),
+    GEAR5("5", 0.58f),
+    GEAR6("6", 0.46f),
+    GEAR7("7", 0.0f),
+    FINAL("Final", 4.77f);
 
     val key = "GearRatio"
 }
 
 enum class DirectoryList(val cfgName: String, val location: String) {
-    APP("App",""),
+    APP("App", ""),
     DOWNLOADS("Downloads", Environment.DIRECTORY_DOWNLOADS),
     DOCUMENTS("Documents", Environment.DIRECTORY_DOCUMENTS);
 }
@@ -347,9 +373,9 @@ enum class CSVItems(val csvName: String) {
 
     fun getHeader(): String {
         var header = ""
-        values().forEachIndexed {  i, item ->
+        values().forEachIndexed { i, item ->
             header += item.csvName
-            if(i != values().count() - 1)
+            if (i != values().count() - 1)
                 header += ","
         }
 
@@ -398,53 +424,60 @@ enum class ConfigSettings(val cfgName: String, var value: Any) {
                 value = newValue.toDouble()
 
             if (value is GaugeType)
-                value = GaugeType.values().find {it.cfgName == newValue} ?: value
+                value = GaugeType.values().find { it.cfgName == newValue } ?: value
 
             if (value is DirectoryList)
-                value = DirectoryList.values().find {it.cfgName == newValue} ?: value
+                value = DirectoryList.values().find { it.cfgName == newValue } ?: value
 
-        } catch(e: Exception) {
+        } catch (e: Exception) {
             DebugLog.e("Settings", "Unable to set $name.", e)
         }
     }
+
     fun toInt(): Int {
-        return if(value is Int) (value as Int) else 0
+        return if (value is Int) (value as Int) else 0
     }
+
     fun toFloat(): Float {
-        return if(value is Float) (value as Float) else 0f
+        return if (value is Float) (value as Float) else 0f
     }
+
     fun toDouble(): Double {
-        return if(value is Double) (value as Double) else 0.0
+        return if (value is Double) (value as Double) else 0.0
     }
+
     fun toBoolean(): Boolean {
-        return if(value is Boolean) (value as Boolean) else false
+        return if (value is Boolean) (value as Boolean) else false
     }
+
     fun toGaugeType(): GaugeType {
-        return if(value is GaugeType) (value as GaugeType) else GaugeType.ROUND
+        return if (value is GaugeType) (value as GaugeType) else GaugeType.ROUND
     }
+
     fun toDirectory(): DirectoryList {
-        return if(value is DirectoryList) (value as DirectoryList) else DirectoryList.APP
+        return if (value is DirectoryList) (value as DirectoryList) else DirectoryList.APP
     }
+
     override fun toString(): String {
-        if(value is String)
+        if (value is String)
             return value as String
 
-        if(value is Int)
+        if (value is Int)
             return (value as Int).toString()
 
-        if(value is Boolean)
+        if (value is Boolean)
             return (value as Boolean).toString()
 
-        if(value is Float)
+        if (value is Float)
             return (value as Float).toString()
 
-        if(value is Double)
+        if (value is Double)
             return (value as Double).toString()
 
-        if(value is GaugeType)
+        if (value is GaugeType)
             return (value as GaugeType).toString()
 
-        if(value is DirectoryList)
+        if (value is DirectoryList)
             return (value as DirectoryList).toString()
 
         return name
@@ -452,59 +485,59 @@ enum class ConfigSettings(val cfgName: String, var value: Any) {
 }
 
 //Delays and timeouts
-val TASK_BUMP_DELAY             = 250
-val TASK_END_DELAY              = 500
-val TASK_END_TIMEOUT            = 3000
-val TIME_OUT_LOGGING            = 10
-val TIME_OUT_DTC                = 20
-val TIME_OUT_FLASH              = 10
-val TIME_OUT_INFO               = 10
+val TASK_BUMP_DELAY = 250
+val TASK_END_DELAY = 500
+val TASK_END_TIMEOUT = 3000
+val TIME_OUT_LOGGING = 10
+val TIME_OUT_DTC = 20
+val TIME_OUT_FLASH = 10
+val TIME_OUT_INFO = 10
 
-val LAYOUT_NAME                 = "LAYOUT_NAME"
-val MAX_GAP_LENGTH              = 14
+val LAYOUT_NAME = "LAYOUT_NAME"
+val MAX_GAP_LENGTH = 14
 
 //Service info
-val CHANNEL_ID                  = "BTService"
-val CHANNEL_NAME                = "BTService"
+val CHANNEL_ID = "BTService"
+val CHANNEL_NAME = "BTService"
 
 //BLE settings
-val BLE_GATT_MTU_SIZE           = 512
-val BLE_SCAN_PERIOD             = 5000L
-val BLE_THREAD_PRIORITY         = 5 //Priority (max is 10)
+val BLE_GATT_MTU_SIZE = 512
+val BLE_SCAN_PERIOD = 5000L
+val BLE_THREAD_PRIORITY = 5 //Priority (max is 10)
 
 //ISOTP bridge UUIDS
-val BLE_CCCD_UUID               = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
-val BLE_SERVICE_UUID            = UUID.fromString("0000abf0-0000-1000-8000-00805f9b34fb")
-val BLE_DATA_TX_UUID            = UUID.fromString("0000abf1-0000-1000-8000-00805f9b34fb")
-val BLE_DATA_RX_UUID            = UUID.fromString("0000abf2-0000-1000-8000-00805f9b34fb")
-val BLE_CMD_TX_UUID             = UUID.fromString("0000abf3-0000-1000-8000-00805f9b34fb")
-val BLE_CMD_RX_UUID             = UUID.fromString("0000abf4-0000-1000-8000-00805f9b34fb")
+val BLE_CCCD_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+val BLE_SERVICE_UUID = UUID.fromString("0000abf0-0000-1000-8000-00805f9b34fb")
+val BLE_DATA_TX_UUID = UUID.fromString("0000abf1-0000-1000-8000-00805f9b34fb")
+val BLE_DATA_RX_UUID = UUID.fromString("0000abf2-0000-1000-8000-00805f9b34fb")
+val BLE_CMD_TX_UUID = UUID.fromString("0000abf3-0000-1000-8000-00805f9b34fb")
+val BLE_CMD_RX_UUID = UUID.fromString("0000abf4-0000-1000-8000-00805f9b34fb")
 
 //ISOTP bridge BLE header defaults
-val BLE_HEADER_ID               = 0xF1
-val BLE_HEADER_PT               = 0xF2
-val BLE_HEADER_RX               = 0x7E8
-val BLE_HEADER_TX               = 0x7E0
-val BLE_HEADER_DSG_RX           = 0x7E9
-val BLE_HEADER_DSG_TX           = 0x7E1
+val BLE_HEADER_ID = 0xF1
+val BLE_HEADER_PT = 0xF2
+val BLE_HEADER_RX = 0x7E8
+val BLE_HEADER_TX = 0x7E0
+val BLE_HEADER_DSG_RX = 0x7E9
+val BLE_HEADER_DSG_TX = 0x7E1
 
 //Log files
-val DEBUG_LOG_NONE              = 0
-val DEBUG_LOG_INFO              = 1
-val DEBUG_LOG_WARNING           = 2
-val DEBUG_LOG_DEBUG             = 4
-val DEBUG_LOG_EXCEPTION         = 8
-val DEBUG_LOG_COMMUNICATIONS    = 16
+val DEBUG_LOG_NONE = 0
+val DEBUG_LOG_INFO = 1
+val DEBUG_LOG_WARNING = 2
+val DEBUG_LOG_DEBUG = 4
+val DEBUG_LOG_EXCEPTION = 8
+val DEBUG_LOG_COMMUNICATIONS = 16
 
 //TQ/HP Calculations
-val KG_TO_N                     = 9.80665f
-val TQ_CONSTANT                 = 16.3f
+val KG_TO_N = 9.80665f
+val TQ_CONSTANT = 16.3f
 
 //Max allowed PID count
-val MAX_PIDS                    = 100
+val MAX_PIDS = 100
 
 //Max CSV size for log viewer
-val MAX_LOG_SIZE                = 2097152
+val MAX_LOG_SIZE = 2097152
 
 
 val CAL_BLOCK_TRANSFER_SIZE = 0xFFD
@@ -521,7 +554,7 @@ enum class SIMOS_18(
     val cryptoKey: ByteArray,
     val cryptoIV: ByteArray,
     val patchBlockNum: Int,
-){
+) {
     _1(
         "Simos 18.1",
         //baseAddresses
@@ -650,23 +683,23 @@ enum class SIMOS_18(
         ),
         //patchBlockNum
         4,
-    ){
+    ) {
         override fun patchTransferSize(address: Int): Int {
 
-            if(address < 0x9600)
+            if (address < 0x9600)
                 return 0x100
-            if(address >= 0x9600 && address < 0x9800)
+            if (address >= 0x9600 && address < 0x9800)
                 return 0x8
-            if(address >= 0x9800 && address < 0x7DD00)
+            if (address >= 0x9800 && address < 0x7DD00)
                 return 0x100
-            if(address >= 0x7DD00 && address < 0x7E200)
+            if (address >= 0x7DD00 && address < 0x7E200)
                 return 0x8
-            if(address >= 0x7E200 && address < 0x7F900)
+            if (address >= 0x7E200 && address < 0x7F900)
                 return 0x100
 
             return 0x8
         }
-     },
+    },
     _10(
         "Simos 18.10",
         //baseAddresses
@@ -794,18 +827,18 @@ enum class SIMOS_18(
         ),
         //patchBlockNum:
         2,
-    ){
+    ) {
         override fun patchTransferSize(address: Int): Int {
 
-            if(address < 0x5cb00)
+            if (address < 0x5cb00)
                 return 0x100
-            if(address >= 0x5cb00 && address < 0x5cc00)
+            if (address >= 0x5cb00 && address < 0x5cc00)
                 return 0x8
-            if(address >= 0x5cc00 && address < 0xb3000)
+            if (address >= 0x5cc00 && address < 0xb3000)
                 return 0x100
-            if(address >= 0xb3000 && address < 0xb3100)
+            if (address >= 0xb3000 && address < 0xb3100)
                 return 0x8
-            if(address >= 0xb3100 && address < 0xdfb000)
+            if (address >= 0xb3100 && address < 0xdfb000)
                 return 0x100
 
             return 0x8
@@ -815,21 +848,85 @@ enum class SIMOS_18(
     abstract fun patchTransferSize(address: Int): Int
 }
 
-enum class COMPATIBLE_BOXCODE_VERSIONS(val str: String, val allowedBoxCodes: Array<String>, val boxCodeLocation: IntArray, val ecm3Range: IntArray, val software: SIMOS_18) {
-    _UNDEFINED("UNDEFINED", arrayOf(""), intArrayOf(0x0, 0x01), intArrayOf(0,0), SIMOS_18._1),
-    _5G0906259L("5G0906259L", arrayOf("5G0906259A", "5G0906259D", "5G0906259L"), intArrayOf(0x60, 0x6B), intArrayOf(55724,66096), SIMOS_18._1),
-    _8V0906264M("8V0906264M", arrayOf("8V0906264M"), intArrayOf(0x60, 0x6B), intArrayOf(55724,66096), SIMOS_18._1),
-    _8V0906259K("8V0906259K", arrayOf("8V0906259B", "8V0906259E", "8V0906259H", "8V0906259K"), intArrayOf(0x60, 0x6B), intArrayOf(55724,66096), SIMOS_18._1),
-    _8V0906259H("8V0906259H", arrayOf(""), intArrayOf(0x60, 0x6B), intArrayOf(55112,65400), SIMOS_18._1),
-    _8V0906259H_PATCH("8V0906259H_PATCH", arrayOf("5G0906259A", "5G0906259D", "5G0906259L", "8V0906264M", "8V0906259B", "8V0906259E", "8V0906259H", "8V0906259K"), intArrayOf(0x60, 0x6B), intArrayOf(55112,65400), SIMOS_18._1),
-    _5G0906259Q("5G0906259Q", arrayOf("5G0906259Q", "06K907425J"), intArrayOf(0x60, 0x6B), intArrayOf(59916,72756), SIMOS_18._10),
-    _8V0906259Q("8V0906259Q", arrayOf("8V0906259Q", "06K907425J"), intArrayOf(0x60, 0x6B), intArrayOf(59916,72756), SIMOS_18._10),
-    _5G0906259Q_PATCH("5G0906259Q_PATCH", arrayOf("5G0906259Q", "06K907425J"), intArrayOf(0x60, 0x6B), intArrayOf(60140,73072), SIMOS_18._10),
+enum class COMPATIBLE_BOXCODE_VERSIONS(
+    val str: String,
+    val allowedBoxCodes: Array<String>,
+    val boxCodeLocation: IntArray,
+    val ecm3Range: IntArray,
+    val software: SIMOS_18
+) {
+    _UNDEFINED("UNDEFINED", arrayOf(""), intArrayOf(0x0, 0x01), intArrayOf(0, 0), SIMOS_18._1),
+    _5G0906259L(
+        "5G0906259L",
+        arrayOf("5G0906259A", "5G0906259D", "5G0906259L"),
+        intArrayOf(0x60, 0x6B),
+        intArrayOf(55724, 66096),
+        SIMOS_18._1
+    ),
+    _8V0906264M(
+        "8V0906264M",
+        arrayOf("8V0906264M"),
+        intArrayOf(0x60, 0x6B),
+        intArrayOf(55724, 66096),
+        SIMOS_18._1
+    ),
+    _8V0906259K(
+        "8V0906259K",
+        arrayOf("8V0906259B", "8V0906259E", "8V0906259H", "8V0906259K"),
+        intArrayOf(0x60, 0x6B),
+        intArrayOf(55724, 66096),
+        SIMOS_18._1
+    ),
+    _8V0906259H(
+        "8V0906259H",
+        arrayOf(""),
+        intArrayOf(0x60, 0x6B),
+        intArrayOf(55112, 65400),
+        SIMOS_18._1
+    ),
+    _8V0906259H_PATCH(
+        "8V0906259H_PATCH",
+        arrayOf(
+            "5G0906259A",
+            "5G0906259D",
+            "5G0906259L",
+            "8V0906264M",
+            "8V0906259B",
+            "8V0906259E",
+            "8V0906259H",
+            "8V0906259K"
+        ),
+        intArrayOf(0x60, 0x6B),
+        intArrayOf(55112, 65400),
+        SIMOS_18._1
+    ),
+    _5G0906259Q(
+        "5G0906259Q",
+        arrayOf("5G0906259Q", "06K907425J"),
+        intArrayOf(0x60, 0x6B),
+        intArrayOf(59916, 72756),
+        SIMOS_18._10
+    ),
+    _8V0906259Q(
+        "8V0906259Q",
+        arrayOf("8V0906259Q", "06K907425J"),
+        intArrayOf(0x60, 0x6B),
+        intArrayOf(59916, 72756),
+        SIMOS_18._10
+    ),
+    _5G0906259Q_PATCH(
+        "5G0906259Q_PATCH",
+        arrayOf("5G0906259Q", "06K907425J"),
+        intArrayOf(0x60, 0x6B),
+        intArrayOf(60140, 73072),
+        SIMOS_18._10
+    ),
 }
 
 fun getScreenResolution(context: Context): Rect {
     val dp = context.resources.configuration
-    val screenSize: Int = context.resources.configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK
+    val screenSize: Int =
+        context.resources.configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK
     val size = when (screenSize) {
         Configuration.SCREENLAYOUT_SIZE_LARGE -> 600
         Configuration.SCREENLAYOUT_SIZE_NORMAL -> 400
@@ -854,11 +951,22 @@ fun Int.toHex(): String = "%08x".format(this)
 fun Int.toColorInverse(): Int = Color.WHITE xor this or 0xFF000000.toInt()
 fun Int.toColorHex(): String = "%06x".format(this and 0xFFFFFF)
 fun Int.toTwo(): String = "%02d".format(this)
-fun Int.toArray2(): ByteArray = byteArrayOf((this and 0xFF00 shr 8).toByte(), (this and 0xFF).toByte())
+fun Int.toArray2(): ByteArray =
+    byteArrayOf((this and 0xFF00 shr 8).toByte(), (this and 0xFF).toByte())
+
 fun Long.toColorInt(): Int = (this.toInt() and 0xFFFFFF) or 0xFF000000.toInt()
 fun Long.toHex2(): String = "%04x".format(this)
 fun Long.toHex4(): String = "%08x".format(this)
 fun Long.toHex(): String = "%16x".format(this)
-fun Long.toArray2(): ByteArray = byteArrayOf((this and 0xFF00 shr 8).toByte(), (this and 0xFF).toByte())
-fun Long.toArray4(): ByteArray = byteArrayOf((this and 0xFF000000 shr 24).toByte(), (this and 0xFF0000 shr 16).toByte(), (this and 0xFF00 shr 8).toByte(), (this and 0xFF).toByte())
-fun ByteArray.toHex(): String = joinToString(separator = " ") { eachByte -> "%02x".format(eachByte) }
+fun Long.toArray2(): ByteArray =
+    byteArrayOf((this and 0xFF00 shr 8).toByte(), (this and 0xFF).toByte())
+
+fun Long.toArray4(): ByteArray = byteArrayOf(
+    (this and 0xFF000000 shr 24).toByte(),
+    (this and 0xFF0000 shr 16).toByte(),
+    (this and 0xFF00 shr 8).toByte(),
+    (this and 0xFF).toByte()
+)
+
+fun ByteArray.toHex(): String =
+    joinToString(separator = " ") { eachByte -> "%02x".format(eachByte) }

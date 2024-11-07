@@ -125,7 +125,8 @@ class MainFragment : Fragment() {
 
         //Set background color
         view.setBackgroundColor(ColorList.BG_NORMAL.value)
-        view.findViewById<ImageView>(R.id.imageMainLogo).setBackgroundColor(ColorList.BG_NORMAL.value)
+        view.findViewById<ImageView>(R.id.imageMainLogo)
+            .setBackgroundColor(ColorList.BG_NORMAL.value)
 
         DebugLog.d(TAG, "onViewCreated")
     }
@@ -133,7 +134,7 @@ class MainFragment : Fragment() {
     override fun onResume() {
         super.onResume()
 
-        if(!ConfigSettings.AUTO_LOG.toBoolean())
+        if (!ConfigSettings.AUTO_LOG.toBoolean())
             sendServiceMessage(BTServiceTask.DO_STOP_TASK.toString())
 
         DebugLog.d(TAG, "onResume")

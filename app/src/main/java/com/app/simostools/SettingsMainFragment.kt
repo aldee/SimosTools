@@ -2,11 +2,11 @@ package com.app.simostools
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat.startForegroundService
+import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
@@ -14,14 +14,14 @@ import com.google.android.material.tabs.TabLayoutMediator
 
 class SettingsMainFragment : Fragment() {
     private val TAG = "SettingsMain"
-    private var mTabLayout: TabLayout?                      = null
-    private var mViewPager: ViewPager2?                     = null
-    private var mViewAdapter: SettingsViewPagerAdapter?     = null
-    private var mGeneralFragment: SettingsGeneralFragment?  = null
-    private var mCarFragment: SettingsCarFragment?          = null
-    private var mMode22Fragment: SettingsMode22Fragment?    = null
-    private var mMode3EFragment: SettingsMode3EFragment?    = null
-    private var mModeDSGFragment: SettingsModeDSGFragment?  = null
+    private var mTabLayout: TabLayout? = null
+    private var mViewPager: ViewPager2? = null
+    private var mViewAdapter: SettingsViewPagerAdapter? = null
+    private var mGeneralFragment: SettingsGeneralFragment? = null
+    private var mCarFragment: SettingsCarFragment? = null
+    private var mMode22Fragment: SettingsMode22Fragment? = null
+    private var mMode3EFragment: SettingsMode3EFragment? = null
+    private var mModeDSGFragment: SettingsModeDSGFragment? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -108,8 +108,8 @@ class SettingsMainFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
 
-        mTabLayout          = null
-        mViewPager          = null
+        mTabLayout = null
+        mViewPager = null
         DebugLog.d(TAG, "onDestroyView")
     }
 
@@ -117,15 +117,15 @@ class SettingsMainFragment : Fragment() {
         super.onDestroy()
 
         mGeneralFragment?.onDestroy()
-        mGeneralFragment    = null
+        mGeneralFragment = null
         mCarFragment?.onDestroy()
-        mCarFragment        = null
+        mCarFragment = null
         mMode22Fragment?.onDestroy()
-        mMode22Fragment     = null
+        mMode22Fragment = null
         mMode3EFragment?.onDestroy()
-        mMode3EFragment     = null
+        mMode3EFragment = null
         mModeDSGFragment?.onDestroy()
-        mModeDSGFragment     = null
+        mModeDSGFragment = null
 
         DebugLog.d(TAG, "onDestroy")
     }
@@ -186,12 +186,22 @@ class SettingsMainFragment : Fragment() {
 
         //Read pid files
         UDSLoggingMode.values().forEach { mode ->
-            val pidList = PIDCSVFile.read(getString(R.string.filename_pid_csv, mode.cfgName), context, mode.addressMin, mode.addressMax)
+            val pidList = PIDCSVFile.read(
+                getString(R.string.filename_pid_csv, mode.cfgName),
+                context,
+                mode.addressMin,
+                mode.addressMax
+            )
             if (pidList != null)
                 PIDs.setList(mode, pidList)
         }
 
-        val pidList = PIDCSVFile.read(getString(R.string.filename_pid_csv, "DSG"), context, UDSLoggingMode.MODE_22.addressMin, UDSLoggingMode.MODE_22.addressMax)
+        val pidList = PIDCSVFile.read(
+            getString(R.string.filename_pid_csv, "DSG"),
+            context,
+            UDSLoggingMode.MODE_22.addressMin,
+            UDSLoggingMode.MODE_22.addressMax
+        )
         if (pidList != null)
             PIDs.setDSGList(pidList)
 

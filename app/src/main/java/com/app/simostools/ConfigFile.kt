@@ -5,12 +5,12 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.lang.Long.parseLong
-import java.util.*
-import java.util.TreeSet
 import java.util.Collections
 import java.util.Enumeration
+import java.util.Properties
+import java.util.TreeSet
 
-class SProperties: Properties() {
+class SProperties : Properties() {
     @Synchronized
     override fun keys(): Enumeration<Any>? {
         return Collections.enumeration(TreeSet(super.keys))
@@ -35,7 +35,7 @@ object ConfigFile {
             mProperties.store(propertiesOutputStream, "save to properties file")
             propertiesOutputStream.close()
             DebugLog.i(TAG, "successful.")
-        } catch(e: Exception) {
+        } catch (e: Exception) {
             DebugLog.e(TAG, "unable to write config file.", e)
             DebugLog.i(TAG, "failed.")
         }
@@ -60,7 +60,7 @@ object ConfigFile {
             }
             inputStream.close()
             DebugLog.i(TAG, "successful.")
-        } catch(e: Exception) {
+        } catch (e: Exception) {
             DebugLog.e(TAG, "unable to read config file.", e)
             DebugLog.i(TAG, "failed.")
         }
@@ -78,31 +78,34 @@ object ConfigFile {
         DebugLog.d(TAG, "Found $key=$value")
 
         try {
-            when(val subKey = key.substringBefore(".")) {
+            when (val subKey = key.substringBefore(".")) {
                 UDSLoggingMode.values()[0].key -> {
-                    val mode = UDSLoggingMode.values().find {it.cfgName == value}
+                    val mode = UDSLoggingMode.values().find { it.cfgName == value }
                     mode?.let {
                         UDSLogger.setMode(it)
                     }
                 }
+
                 GearRatios.values()[0].key -> {
                     val f = value.toFloat()
                     val gearString = key.substringAfter(".")
-                    val gear = GearRatios.values().find {it.gear == gearString}
+                    val gear = GearRatios.values().find { it.gear == gearString }
                     gear?.let {
                         it.ratio = f
                     }
                 }
+
                 ColorList.values()[0].key -> {
                     val name = key.substringAfter(".")
                     val l = parseLong(value, 16)
-                    val color = ColorList.values().find {it.cfgName == name}
+                    val color = ColorList.values().find { it.cfgName == name }
                     color?.let {
                         it.value = l.toColorInt()
                     }
                 }
+
                 else -> {
-                    if(subKey == ConfigSettings.DEBUG_LOG.cfgName) {
+                    if (subKey == ConfigSettings.DEBUG_LOG.cfgName) {
                         DebugLog.setFlags(value.toInt())
                     } else {
                         val cfg = ConfigSettings.values().find { it.cfgName == subKey }

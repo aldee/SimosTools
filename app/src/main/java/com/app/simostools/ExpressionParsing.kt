@@ -1,6 +1,10 @@
 package com.app.simostools
 
-import kotlin.math.*
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
+import kotlin.math.tan
 
 fun eval(str: String): Float {
     return object : Any() {
@@ -9,7 +13,7 @@ fun eval(str: String): Float {
 
         fun nextChar() {
             ch = if (++pos < str.length) str[pos].code
-                    else -1
+            else -1
         }
 
         fun eat(charToEat: Int): Boolean {
@@ -91,7 +95,7 @@ fun eval(str: String): Float {
             if (eat('^'.code))
                 x = x.pow(parseFactor()) // exponentiation
 
-            if(eat('E'.code)) {
+            if (eat('E'.code)) {
                 x *= 10f.pow(parseFactor()) // scientific notation
             }
 

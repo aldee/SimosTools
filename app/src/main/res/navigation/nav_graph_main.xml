@@ -13,23 +13,23 @@
 
         <action
             android:id="@+id/action_MainFragment_to_LoggingFragment"
-            app:destination="@id/LoggingFragment"/>
+            app:destination="@id/LoggingFragment" />
 
         <action
             android:id="@+id/action_MainFragment_to_FlashingFragment"
-            app:destination="@id/FlashingFragment"/>
+            app:destination="@id/FlashingFragment" />
 
         <action
             android:id="@+id/action_MainFragment_to_LogViewerFragment"
-            app:destination="@id/LogViewerFragment"/>
+            app:destination="@id/LogViewerFragment" />
 
         <action
             android:id="@+id/action_MainFragment_to_UtilitiesFragment"
-            app:destination="@id/UtilitiesFragment"/>
+            app:destination="@id/UtilitiesFragment" />
 
         <action
             android:id="@+id/action_MainFragment_to_SettingsFragment"
-            app:destination="@id/SettingsFragment"/>
+            app:destination="@id/SettingsFragment" />
 
     </fragment>
 
@@ -41,11 +41,11 @@
 
         <action
             android:id="@+id/action_LoggingFragment_to_CockpitFragment"
-            app:destination="@id/CockpitFragment"/>
+            app:destination="@id/CockpitFragment" />
 
         <action
             android:id="@+id/action_LoggingFragment_to_LogViewer"
-            app:destination="@id/LogViewerFragment"/>
+            app:destination="@id/LogViewerFragment" />
 
     </fragment>
 
@@ -53,15 +53,13 @@
         android:id="@+id/CockpitFragment"
         android:name="com.app.simostools.CockpitFragment"
         android:label="@string/nav_cockpit"
-        tools:layout="@layout/fragment_cockpit">
-    </fragment>
+        tools:layout="@layout/fragment_cockpit"></fragment>
 
     <fragment
         android:id="@+id/FlashingFragment"
         android:name="com.app.simostools.FlashingFragment"
         android:label="@string/nav_flashing"
-        tools:layout="@layout/fragment_flashing">
-    </fragment>
+        tools:layout="@layout/fragment_flashing"></fragment>
 
     <fragment
         android:id="@+id/LogViewerFragment"
@@ -71,11 +69,11 @@
 
         <action
             android:id="@+id/action_LogViewerFragment_to_LogViewerEnabledFragment"
-            app:destination="@id/LogViewerEnabledFragment"/>
+            app:destination="@id/LogViewerEnabledFragment" />
 
         <action
             android:id="@+id/action_LogViewerFragment_to_LogViewerTabsFragment"
-            app:destination="@id/LogViewerTabsFragment"/>
+            app:destination="@id/LogViewerTabsFragment" />
 
     </fragment>
 
@@ -83,22 +81,19 @@
         android:id="@+id/LogViewerEnabledFragment"
         android:name="com.app.simostools.LogViewerEnabledFragment"
         android:label="@string/nav_log_viewer_enabled"
-        tools:layout="@layout/fragment_log_viewer_enabled">
-    </fragment>
+        tools:layout="@layout/fragment_log_viewer_enabled"></fragment>
 
     <fragment
         android:id="@+id/LogViewerTabsFragment"
         android:name="com.app.simostools.LogViewerTabsFragment"
         android:label="@string/nav_log_viewer_tabs"
-        tools:layout="@layout/fragment_log_viewer_tabs">
-    </fragment>
+        tools:layout="@layout/fragment_log_viewer_tabs"></fragment>
 
     <fragment
         android:id="@+id/UtilitiesFragment"
         android:name="com.app.simostools.UtilitiesFragment"
         android:label="@string/nav_utilities"
-        tools:layout="@layout/fragment_utilities">
-    </fragment>
+        tools:layout="@layout/fragment_utilities"></fragment>
 
     <fragment
         android:id="@+id/SettingsFragment"
@@ -108,7 +103,7 @@
 
         <action
             android:id="@+id/action_SettingsFragment_to_ColorFragment"
-            app:destination="@id/ColorFragment"/>
+            app:destination="@id/ColorFragment" />
 
     </fragment>
 
@@ -116,7 +111,6 @@
         android:id="@+id/ColorFragment"
         android:name="com.app.simostools.ColorFragment"
         android:label="@string/nav_color"
-        tools:layout="@layout/fragment_color">
-    </fragment>
+        tools:layout="@layout/fragment_color"></fragment>
 
 </navigation>

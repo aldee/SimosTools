@@ -14,9 +14,9 @@ import androidx.navigation.fragment.findNavController
 class LogViewerEnabledViewModel : ViewModel() {
 }
 
-class LogViewerEnabledFragment: Fragment() {
-    private var TAG                                                         = "LogViewerEnabledFragment"
-    private var mEnableList:Array<androidx.appcompat.widget.SwitchCompat?>? = null
+class LogViewerEnabledFragment : Fragment() {
+    private var TAG = "LogViewerEnabledFragment"
+    private var mEnableList: Array<androidx.appcompat.widget.SwitchCompat?>? = null
     private lateinit var mViewModel: LogViewerEnabledViewModel
 
     override fun onDestroy() {
@@ -77,7 +77,7 @@ class LogViewerEnabledFragment: Fragment() {
                     pidLayout.setTextColor(ColorList.TEXT.value)
                     pidLayout.textSize = 24f
                     pidLayout.isChecked = pid?.enabled ?: false
-                    pidLayout.setTextColor(pid?.color?: Color.WHITE)
+                    pidLayout.setTextColor(pid?.color ?: Color.WHITE)
                     enableList[i] = pidLayout
                     lLayout.addView(pidLayout)
                 }

@@ -1,21 +1,29 @@
 package com.app.simostools
 
 enum class DTCCommands(val str: String, val command: ByteArray, val response: ByteArray) {
-    EXT_DIAG("Extended Diagnostic", byteArrayOf(0x10.toByte(), 0x03.toByte()), byteArrayOf(0x50.toByte(), 0x03.toByte())),
-    DTC_REQ("DTC Request", byteArrayOf(0x19.toByte(), 0x02.toByte(), 0xAB.toByte()), byteArrayOf(0x7F.toByte(), 0x19.toByte()))
+    EXT_DIAG(
+        "Extended Diagnostic",
+        byteArrayOf(0x10.toByte(), 0x03.toByte()),
+        byteArrayOf(0x50.toByte(), 0x03.toByte())
+    ),
+    DTC_REQ(
+        "DTC Request",
+        byteArrayOf(0x19.toByte(), 0x02.toByte(), 0xAB.toByte()),
+        byteArrayOf(0x7F.toByte(), 0x19.toByte())
+    )
 }
 
 object UDSdtc {
-    private val TAG                     = "UDSdtc"
-    private var mLastString: String     = ""
-    private var mTimeoutCounter: Int    = TIME_OUT_DTC
+    private val TAG = "UDSdtc"
+    private var mLastString: String = ""
+    private var mTimeoutCounter: Int = TIME_OUT_DTC
 
     fun getInfo(): String {
         return mLastString
     }
 
     fun getStartCount(clear: Boolean): Int {
-        return if(clear) 1
+        return if (clear) 1
         else DTCCommands.values().count()
     }
 
@@ -25,7 +33,7 @@ object UDSdtc {
     }
 
     private fun startClearDTC(ticks: Int): ByteArray {
-        if(ticks < getStartCount(true)) {
+        if (ticks < getStartCount(true)) {
             //Send clear request
             val bleHeader = BLEHeader()
             bleHeader.rxID = 0x7E8
@@ -40,7 +48,7 @@ object UDSdtc {
     }
 
     private fun startGetDTC(ticks: Int): ByteArray {
-        if(ticks < getStartCount(false)) {
+        if (ticks < getStartCount(false)) {
             //Send clear request
             val bleHeader = BLEHeader()
             bleHeader.cmdSize = DTCCommands.values()[ticks].command.count()
@@ -56,7 +64,7 @@ object UDSdtc {
         buff?.let {
             resetTimeout()
 
-            return if(clear) processClearPacket(ticks, buff)
+            return if (clear) processClearPacket(ticks, buff)
             else processGetPacket(ticks, buff)
         }
 
@@ -64,7 +72,7 @@ object UDSdtc {
     }
 
     private fun processClearPacket(ticks: Int, buff: ByteArray): UDSReturn {
-        if(ticks < getStartCount(true)) {
+        if (ticks < getStartCount(true)) {
             mLastString = if (buff.count() == 9 && buff[8] == 0x44.toByte()) {
                 "ok."
             } else {
@@ -77,11 +85,11 @@ object UDSdtc {
     }
 
     private fun processGetPacket(ticks: Int, buff: ByteArray): UDSReturn {
-        if(ticks < getStartCount(false) && buff.count() > 8) {
+        if (ticks < getStartCount(false) && buff.count() > 8) {
             val data = buff.copyOfRange(8, buff.count())
             var resOk = true
             DTCCommands.values()[ticks].response.forEachIndexed() { i, d ->
-                if(d != data[i])
+                if (d != data[i])
                     resOk = false
             }
 
@@ -94,18 +102,18 @@ object UDSdtc {
             }
         }
 
-        if(buff.count() > 8) {
+        if (buff.count() > 8) {
             var firstPIDs = true
             mLastString = ""
             var data = buff.copyOfRange(8, buff.count())
-            if(data.count() >= 3 && data[0] == 0x59.toByte() && data[1] == 0x02.toByte() && data[2] == 0xFF.toByte()) {
+            if (data.count() >= 3 && data[0] == 0x59.toByte() && data[1] == 0x02.toByte() && data[2] == 0xFF.toByte()) {
                 return if (data.count() > 3) {
                     data = data.copyOfRange(3, data.count())
-                    while(data.count() >= 4) {
+                    while (data.count() >= 4) {
                         val resInt = (data[1] shl 8) + data[2]
-                        DTCs.list.forEachIndexed() { i, d->
-                            if(d?.code == resInt) {
-                                if(!firstPIDs)
+                        DTCs.list.forEachIndexed() { i, d ->
+                            if (d?.code == resInt) {
+                                if (!firstPIDs)
                                     mLastString += "\n"
                                 mLastString += "${d.pcode} ${d.name}"
                                 firstPIDs = false
@@ -128,7 +136,7 @@ object UDSdtc {
     }
 
     private fun addTimeout(): UDSReturn {
-        if(--mTimeoutCounter == 0) {
+        if (--mTimeoutCounter == 0) {
             return UDSReturn.ERROR_TIME_OUT
         }
 

@@ -2,8 +2,9 @@ package com.app.simostools
 
 import android.content.Context
 import android.util.Log
-import java.io.*
-import java.lang.Exception
+import java.io.BufferedWriter
+import java.io.File
+import java.io.FileWriter
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -14,9 +15,9 @@ object DebugLog {
     private var mFlags: Int = ConfigSettings.DEBUG_LOG.toInt()
 
     fun setFlags(flags: Int) {
-        if(flags in 0 .. 32) {
+        if (flags in 0..32) {
             mFlags = flags
-            d(TAG,"Set debug flags to: $flags")
+            d(TAG, "Set debug flags to: $flags")
         }
     }
 
@@ -36,7 +37,7 @@ object DebugLog {
                 }
                 mBufferedWriter = BufferedWriter(FileWriter(logFile, true))
                 i(TAG, "Log open.")
-            } catch(e: Exception) {
+            } catch (e: Exception) {
                 Log.e(TAG, "Error opening debug log", e)
             }
         }
@@ -55,7 +56,7 @@ object DebugLog {
     fun i(tag: String, text: String) {
         Log.i(tag, text)
 
-        if((mFlags and DEBUG_LOG_INFO) == 0)
+        if ((mFlags and DEBUG_LOG_INFO) == 0)
             return
 
         add("${timeStamp()} [I] $tag: $text")
@@ -65,7 +66,7 @@ object DebugLog {
     fun w(tag: String, text: String) {
         Log.w(tag, text)
 
-        if((mFlags and DEBUG_LOG_WARNING) == 0)
+        if ((mFlags and DEBUG_LOG_WARNING) == 0)
             return
 
         add("${timeStamp()} [W] $tag: $text")
@@ -75,7 +76,7 @@ object DebugLog {
     fun d(tag: String, text: String) {
         Log.d(tag, text)
 
-        if((mFlags and DEBUG_LOG_DEBUG) == 0)
+        if ((mFlags and DEBUG_LOG_DEBUG) == 0)
             return
 
         add("${timeStamp()} [D] $tag: $text")
@@ -85,7 +86,7 @@ object DebugLog {
     fun e(tag: String, text: String, e: Exception) {
         Log.e(tag, text, e)
 
-        if((mFlags and DEBUG_LOG_EXCEPTION) == 0)
+        if ((mFlags and DEBUG_LOG_EXCEPTION) == 0)
             return
 
         add("${timeStamp()} [E] $tag: $text")
@@ -98,7 +99,7 @@ object DebugLog {
                 return
 
             val dirString = if (from) "${it.count()} ->"
-                else "${it.count()}  <-"
+            else "${it.count()}  <-"
 
             add("${timeStamp()} [C] $tag: [$dirString] ${it.toHex()}")
             newLine()
@@ -117,7 +118,7 @@ object DebugLog {
     }
 
     private fun add(text: String) {
-        if(mFlags == DEBUG_LOG_NONE)
+        if (mFlags == DEBUG_LOG_NONE)
             return
 
         try {

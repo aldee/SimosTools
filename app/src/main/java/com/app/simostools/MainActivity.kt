@@ -3,33 +3,30 @@ package com.app.simostools
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
-import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
-import android.content.IntentFilter
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.os.*
+import android.graphics.drawable.ColorDrawable
+import android.os.Build
+import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
-import android.graphics.drawable.ColorDrawable
 import androidx.lifecycle.ViewModelProvider
-import java.util.*
-import android.os.Environment
-
-import java.io.File
-
-import android.R.attr.name
+import java.util.Timer
+import java.util.TimerTask
 
 class MainViewModel : ViewModel() {
-    var started: Boolean                    = false
+    var started: Boolean = false
     var connectionState: BLEConnectionState = BLEConnectionState.NONE
-    var currentTask: UDSTask                = UDSTask.NONE
-    var guiTimer: Timer?                    = null
-    var writeLog: Boolean                   = false
+    var currentTask: UDSTask = UDSTask.NONE
+    var guiTimer: Timer? = null
+    var writeLog: Boolean = false
 }
 
 class MainActivity : AppCompatActivity() {
@@ -37,11 +34,12 @@ class MainActivity : AppCompatActivity() {
     private var mAskingPermission = false
     lateinit var mViewModel: MainViewModel
 
-    var resultBTLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            doConnect()
+    var resultBTLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                doConnect()
+            }
         }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,19 +58,39 @@ class MainActivity : AppCompatActivity() {
             //Write pid default files
             UDSLoggingMode.values().forEach { mode ->
                 //write default
-                PIDCSVFile.write(getString(R.string.filename_pid_csv, mode.cfgName), applicationContext, PIDs.getList(mode), false)
+                PIDCSVFile.write(
+                    getString(R.string.filename_pid_csv, mode.cfgName),
+                    applicationContext,
+                    PIDs.getList(mode),
+                    false
+                )
 
                 //Read pid files
-                val pidList = PIDCSVFile.read(getString(R.string.filename_pid_csv, mode.cfgName), applicationContext, mode.addressMin, mode.addressMax)
+                val pidList = PIDCSVFile.read(
+                    getString(R.string.filename_pid_csv, mode.cfgName),
+                    applicationContext,
+                    mode.addressMin,
+                    mode.addressMax
+                )
                 if (pidList != null)
                     PIDs.setList(mode, pidList)
             }
 
             //write DSG default
-            PIDCSVFile.write(getString(R.string.filename_pid_csv, "DSG"), applicationContext, PIDs.getDSGList(), false)
+            PIDCSVFile.write(
+                getString(R.string.filename_pid_csv, "DSG"),
+                applicationContext,
+                PIDs.getDSGList(),
+                false
+            )
 
             //Read DSG pid files
-            val pidList = PIDCSVFile.read(getString(R.string.filename_pid_csv, "DSG"), applicationContext, UDSLoggingMode.MODE_22.addressMin, UDSLoggingMode.MODE_22.addressMax)
+            val pidList = PIDCSVFile.read(
+                getString(R.string.filename_pid_csv, "DSG"),
+                applicationContext,
+                UDSLoggingMode.MODE_22.addressMin,
+                UDSLoggingMode.MODE_22.addressMax
+            )
             if (pidList != null)
                 PIDs.setDSGList(pidList)
 
@@ -116,7 +134,12 @@ class MainActivity : AppCompatActivity() {
         filter.addAction(GUIMessage.STATE_TASK.toString())
         filter.addAction(GUIMessage.WRITE_LOG.toString())
         filter.addAction(GUIMessage.TOAST.toString())
-        registerReceiver(mBroadcastReceiver, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.registerReceiver(
+                this, mBroadcastReceiver, filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
+        }
 
         DebugLog.d(TAG, "onResume")
     }
@@ -133,17 +156,21 @@ class MainActivity : AppCompatActivity() {
         override fun onReceive(context: Context?, intent: Intent) {
             when (intent.action) {
                 GUIMessage.STATE_TASK.toString() -> {
-                    mViewModel.currentTask = intent.getSerializableExtra(GUIMessage.STATE_TASK.toString()) as UDSTask
+                    mViewModel.currentTask =
+                        intent.getSerializableExtra(GUIMessage.STATE_TASK.toString()) as UDSTask
                     setStatus()
                 }
+
                 GUIMessage.STATE_CONNECTION.toString() -> {
-                    val connectionState = intent.getSerializableExtra(GUIMessage.STATE_CONNECTION.toString()) as BLEConnectionState
+                    val connectionState =
+                        intent.getSerializableExtra(GUIMessage.STATE_CONNECTION.toString()) as BLEConnectionState
                     mViewModel.connectionState = connectionState
                     mViewModel.currentTask = UDSTask.NONE
                     setStatus()
                 }
+
                 GUIMessage.WRITE_LOG.toString() -> {
-                    if(intent.getBooleanExtra(GUIMessage.WRITE_LOG.toString(), false)) {
+                    if (intent.getBooleanExtra(GUIMessage.WRITE_LOG.toString(), false)) {
                         mViewModel.writeLog = true
                         setStatus()
                     } else {
@@ -151,6 +178,7 @@ class MainActivity : AppCompatActivity() {
                         setStatus()
                     }
                 }
+
                 GUIMessage.TOAST.toString() -> {
                     val nToast = intent.getStringExtra(GUIMessage.TOAST.toString())
                     Toast.makeText(context, nToast, Toast.LENGTH_SHORT).show()
@@ -160,12 +188,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun timerCallback() {
-        when(mViewModel.connectionState) {
-            BLEConnectionState.ERROR      -> doConnect()
-            BLEConnectionState.NONE       -> doConnect()
-            BLEConnectionState.CONNECTING -> { }
-            BLEConnectionState.CONNECTED  -> {
-                if(ConfigSettings.AUTO_LOG.toBoolean() && mViewModel.currentTask == UDSTask.NONE) {
+        when (mViewModel.connectionState) {
+            BLEConnectionState.ERROR -> doConnect()
+            BLEConnectionState.NONE -> doConnect()
+            BLEConnectionState.CONNECTING -> {}
+            BLEConnectionState.CONNECTED -> {
+                if (ConfigSettings.AUTO_LOG.toBoolean() && mViewModel.currentTask == UDSTask.NONE) {
                     sendServiceMessage(BTServiceTask.DO_START_LOG.toString())
                 }
             }
@@ -183,7 +211,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun doConnect() {
         //If we are already connecting abort
-        if(mViewModel.connectionState > BLEConnectionState.NONE)
+        if (mViewModel.connectionState > BLEConnectionState.NONE)
             return
 
         //if BT is off ask to enable
@@ -196,11 +224,11 @@ class MainActivity : AppCompatActivity() {
         //check permissions
         var havePermissions = true
         RequiredPermissions.values().forEach {
-            if(it.required && it.result == PackageManager.PERMISSION_DENIED)
+            if (it.required && it.result == PackageManager.PERMISSION_DENIED)
                 havePermissions = false
         }
 
-        if(havePermissions) {
+        if (havePermissions) {
             //Tell service to connect
             sendServiceMessage(BTServiceTask.DO_CONNECT.toString())
         } else {
@@ -214,29 +242,37 @@ class MainActivity : AppCompatActivity() {
 
     private fun setStatus() {
         var newString = ""
-        when(mViewModel.currentTask) {
+        when (mViewModel.currentTask) {
             UDSTask.NONE -> {
-                when(mViewModel.connectionState) {
+                when (mViewModel.connectionState) {
                     BLEConnectionState.ERROR -> {
-                        newString = getString(R.string.title_error, mViewModel.connectionState.errorMessage)
+                        newString =
+                            getString(R.string.title_error, mViewModel.connectionState.errorMessage)
                         setActionBarColor(ColorList.ST_ERROR.value)
                     }
+
                     BLEConnectionState.NONE -> {
                         newString = getString(R.string.title_not_connected)
                         setActionBarColor(ColorList.ST_NONE.value)
                     }
+
                     BLEConnectionState.CONNECTING -> {
                         newString = getString(R.string.title_connecting)
                         setActionBarColor(ColorList.ST_CONNECTING.value)
                     }
+
                     BLEConnectionState.CONNECTED -> {
-                        newString = getString(R.string.title_connected_to, mViewModel.connectionState.deviceName)
+                        newString = getString(
+                            R.string.title_connected_to,
+                            mViewModel.connectionState.deviceName
+                        )
                         setActionBarColor(ColorList.ST_CONNECTED.value)
                     }
                 }
             }
+
             UDSTask.LOGGING -> {
-                if(mViewModel.writeLog) {
+                if (mViewModel.writeLog) {
                     newString = "Logging"
                     setActionBarColor(ColorList.ST_WRITING.value)
                 } else {
@@ -244,15 +280,17 @@ class MainActivity : AppCompatActivity() {
                     setActionBarColor(ColorList.ST_LOGGING.value)
                 }
             }
+
             UDSTask.FLASHING -> {
                 newString = "Flashing"
                 setActionBarColor(ColorList.ST_LOGGING.value)
             }
-            UDSTask.INFO        -> newString = "Getting ECU Info"
-            UDSTask.DTC_GET     -> newString = "Getting DTC"
-            UDSTask.DTC_CLEAR   -> newString = "Clearing DTC"
+
+            UDSTask.INFO -> newString = "Getting ECU Info"
+            UDSTask.DTC_GET -> newString = "Getting DTC"
+            UDSTask.DTC_CLEAR -> newString = "Clearing DTC"
             UDSTask.SET_ADAPTER -> newString = "Setting Adapter Name"
-            UDSTask.TUNE_INFO   -> newString = "Getting Tune Info"
+            UDSTask.TUNE_INFO -> newString = "Getting Tune Info"
         }
         supportActionBar?.title = getString(R.string.app_name) + " - " + newString
     }
@@ -262,16 +300,23 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.setBackgroundDrawable(colorDrawable)
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         mAskingPermission = false
 
-        if(requestCode < RequiredPermissions.values().count())
-        {
-            RequiredPermissions.values()[requestCode].result = grantResults.firstOrNull() ?: PackageManager.PERMISSION_DENIED
-            if(RequiredPermissions.values()[requestCode].required && RequiredPermissions.values()[requestCode].result == PackageManager.PERMISSION_DENIED) {
-                DebugLog.i(TAG, "Permission was denied and is required ${RequiredPermissions.values()[requestCode].permission}.")
+        if (requestCode < RequiredPermissions.values().count()) {
+            RequiredPermissions.values()[requestCode].result =
+                grantResults.firstOrNull() ?: PackageManager.PERMISSION_DENIED
+            if (RequiredPermissions.values()[requestCode].required && RequiredPermissions.values()[requestCode].result == PackageManager.PERMISSION_DENIED) {
+                DebugLog.i(
+                    TAG,
+                    "Permission was denied and is required ${RequiredPermissions.values()[requestCode].permission}."
+                )
                 checkNextPermission(requestCode)
             } else {
                 if (requestCode == RequiredPermissions.values().count() - 1) {
@@ -285,11 +330,15 @@ class MainActivity : AppCompatActivity() {
 
     // Function to check and request permission.
     private fun checkPermission(permission: String, requestCode: Int): Boolean {
-        if(mAskingPermission)
+        if (mAskingPermission)
             return false
 
         if (Build.VERSION.SDK_INT >= RequiredPermissions.values()[requestCode].version &&
-            ContextCompat.checkSelfPermission(this@MainActivity, permission) == PackageManager.PERMISSION_DENIED) {
+            ContextCompat.checkSelfPermission(
+                this@MainActivity,
+                permission
+            ) == PackageManager.PERMISSION_DENIED
+        ) {
             // Requesting the permission
             DebugLog.i(TAG, "Asking for permission $permission")
             mAskingPermission = true
@@ -304,11 +353,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkNextPermission(permission: Int, required: Boolean = false): Boolean {
-        for(i in permission until RequiredPermissions.values().count()) {
-            if(required && !RequiredPermissions.values()[i].required)
+        for (i in permission until RequiredPermissions.values().count()) {
+            if (required && !RequiredPermissions.values()[i].required)
                 continue
 
-            if(!checkPermission(RequiredPermissions.values()[i].permission, i))
+            if (!checkPermission(RequiredPermissions.values()[i].permission, i))
                 return false
         }
 
@@ -329,7 +378,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun startGUITimer() {
-        if(mViewModel.guiTimer == null) {
+        if (mViewModel.guiTimer == null) {
             // creating timer task, timer
             mViewModel.guiTimer = Timer()
 
@@ -343,7 +392,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun stopGUITimer() {
-        if(mViewModel.guiTimer != null) {
+        if (mViewModel.guiTimer != null) {
             mViewModel.guiTimer?.cancel()
             mViewModel.guiTimer = null
         }

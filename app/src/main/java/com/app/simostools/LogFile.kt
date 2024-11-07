@@ -1,19 +1,21 @@
 package com.app.simostools
 
-import android.content.Context
-import android.provider.MediaStore
 import android.content.ContentValues
+import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
-import java.io.*
+import android.provider.MediaStore
+import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStream
 
 object LogFile {
     private val TAG = "LogFile"
-    private var mOutputStream: OutputStream?    = null
-    private var mLastFile: File?                = null
-    private var mLastUri: Uri?                  = null
+    private var mOutputStream: OutputStream? = null
+    private var mLastFile: File? = null
+    private var mLastUri: Uri? = null
 
     fun create(fileName: String, subFolder: String, context: Context?) {
         context?.let {
@@ -44,7 +46,10 @@ object LogFile {
                 try {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                         val dirName = ConfigSettings.OUT_DIRECTORY.toDirectory().location
-                        val path = File(Environment.getExternalStoragePublicDirectory(dirName), "/$subFolder")
+                        val path = File(
+                            Environment.getExternalStoragePublicDirectory(dirName),
+                            "/$subFolder"
+                        )
                         if (!path.exists())
                             path.mkdir()
 
@@ -83,10 +88,10 @@ object LogFile {
     }
 
     fun close() {
-       if(mOutputStream != null) {
-           DebugLog.i(TAG, "Log closed.")
-           mOutputStream!!.close()
-           mOutputStream = null
+        if (mOutputStream != null) {
+            DebugLog.i(TAG, "Log closed.")
+            mOutputStream!!.close()
+            mOutputStream = null
         }
     }
 

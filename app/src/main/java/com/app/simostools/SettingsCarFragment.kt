@@ -2,22 +2,24 @@ package com.app.simostools
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.EditText
+import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
+import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.core.content.ContextCompat
 
 class SettingsCarViewModel : ViewModel() {
-    var logMode         = UDSLoggingMode.MODE_22
+    var logMode = UDSLoggingMode.MODE_22
 }
 
 class SettingsCarFragment : Fragment() {
-    private val TAG                                     = "SettingsCar"
+    private val TAG = "SettingsCar"
     private lateinit var mViewModel: SettingsCarViewModel
 
     override fun onCreateView(
@@ -48,7 +50,10 @@ class SettingsCarFragment : Fragment() {
             }
 
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                view.findViewById<TextView>(R.id.textViewCurbWeight).text = getString(R.string.textview_settings_curb_weight, view.findViewById<SeekBar>(R.id.seekBarCurbWeight).progress)
+                view.findViewById<TextView>(R.id.textViewCurbWeight).text = getString(
+                    R.string.textview_settings_curb_weight,
+                    view.findViewById<SeekBar>(R.id.seekBarCurbWeight).progress
+                )
             }
         })
 
@@ -61,7 +66,10 @@ class SettingsCarFragment : Fragment() {
             }
 
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                view.findViewById<TextView>(R.id.textViewTireDiameter).text = getString(R.string.textview_settings_tire_diameter, view.findViewById<SeekBar>(R.id.seekBarTireDiameter).progress.toFloat()/1000f)
+                view.findViewById<TextView>(R.id.textViewTireDiameter).text = getString(
+                    R.string.textview_settings_tire_diameter,
+                    view.findViewById<SeekBar>(R.id.seekBarTireDiameter).progress.toFloat() / 1000f
+                )
             }
         })
 
@@ -74,7 +82,10 @@ class SettingsCarFragment : Fragment() {
             }
 
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                view.findViewById<TextView>(R.id.textViewDragCoefficient).text = getString(R.string.textview_settings_drag_coefficient, view.findViewById<SeekBar>(R.id.seekBarDragCoefficient).progress.toFloat()/100.0f)
+                view.findViewById<TextView>(R.id.textViewDragCoefficient).text = getString(
+                    R.string.textview_settings_drag_coefficient,
+                    view.findViewById<SeekBar>(R.id.seekBarDragCoefficient).progress.toFloat() / 100.0f
+                )
             }
         })
 
@@ -107,14 +118,22 @@ class SettingsCarFragment : Fragment() {
             }
 
             //Get gear ratios
-            currentView.findViewById<EditText>(R.id.editTextGear1).setText(GearRatios.GEAR1.ratio.toString())
-            currentView.findViewById<EditText>(R.id.editTextGear2).setText(GearRatios.GEAR2.ratio.toString())
-            currentView.findViewById<EditText>(R.id.editTextGear3).setText(GearRatios.GEAR3.ratio.toString())
-            currentView.findViewById<EditText>(R.id.editTextGear4).setText(GearRatios.GEAR4.ratio.toString())
-            currentView.findViewById<EditText>(R.id.editTextGear5).setText(GearRatios.GEAR5.ratio.toString())
-            currentView.findViewById<EditText>(R.id.editTextGear6).setText(GearRatios.GEAR6.ratio.toString())
-            currentView.findViewById<EditText>(R.id.editTextGear7).setText(GearRatios.GEAR7.ratio.toString())
-            currentView.findViewById<EditText>(R.id.editTextGearFinal).setText(GearRatios.FINAL.ratio.toString())
+            currentView.findViewById<EditText>(R.id.editTextGear1)
+                .setText(GearRatios.GEAR1.ratio.toString())
+            currentView.findViewById<EditText>(R.id.editTextGear2)
+                .setText(GearRatios.GEAR2.ratio.toString())
+            currentView.findViewById<EditText>(R.id.editTextGear3)
+                .setText(GearRatios.GEAR3.ratio.toString())
+            currentView.findViewById<EditText>(R.id.editTextGear4)
+                .setText(GearRatios.GEAR4.ratio.toString())
+            currentView.findViewById<EditText>(R.id.editTextGear5)
+                .setText(GearRatios.GEAR5.ratio.toString())
+            currentView.findViewById<EditText>(R.id.editTextGear6)
+                .setText(GearRatios.GEAR6.ratio.toString())
+            currentView.findViewById<EditText>(R.id.editTextGear7)
+                .setText(GearRatios.GEAR7.ratio.toString())
+            currentView.findViewById<EditText>(R.id.editTextGearFinal)
+                .setText(GearRatios.FINAL.ratio.toString())
 
             //Set colors
             doSetColor()
@@ -163,23 +182,56 @@ class SettingsCarFragment : Fragment() {
     fun doSave() {
         view?.let { currentView ->
             // Set update rate
-            ConfigFile.set(ConfigSettings.CURB_WEIGHT.cfgName, currentView.findViewById<SeekBar>(R.id.seekBarCurbWeight).progress.toString())
+            ConfigFile.set(
+                ConfigSettings.CURB_WEIGHT.cfgName,
+                currentView.findViewById<SeekBar>(R.id.seekBarCurbWeight).progress.toString()
+            )
 
             // Set persist delay
-            ConfigFile.set(ConfigSettings.TIRE_DIAMETER.cfgName, (currentView.findViewById<SeekBar>(R.id.seekBarTireDiameter).progress.toFloat()/1000.0f).toString())
+            ConfigFile.set(
+                ConfigSettings.TIRE_DIAMETER.cfgName,
+                (currentView.findViewById<SeekBar>(R.id.seekBarTireDiameter).progress.toFloat() / 1000.0f).toString()
+            )
 
             // Set persist delay
-            ConfigFile.set(ConfigSettings.DRAG_COEFFICIENT.cfgName, (currentView.findViewById<SeekBar>(R.id.seekBarDragCoefficient).progress.toDouble()/20000000.0).toString())
+            ConfigFile.set(
+                ConfigSettings.DRAG_COEFFICIENT.cfgName,
+                (currentView.findViewById<SeekBar>(R.id.seekBarDragCoefficient).progress.toDouble() / 20000000.0).toString()
+            )
 
             //Save Gear Ratios
-            ConfigFile.set("${GearRatios.GEAR1.key}.${GearRatios.GEAR1.gear}", currentView.findViewById<EditText>(R.id.editTextGear1).text.toString())
-            ConfigFile.set("${GearRatios.GEAR2.key}.${GearRatios.GEAR2.gear}", currentView.findViewById<EditText>(R.id.editTextGear2).text.toString())
-            ConfigFile.set("${GearRatios.GEAR3.key}.${GearRatios.GEAR3.gear}", currentView.findViewById<EditText>(R.id.editTextGear3).text.toString())
-            ConfigFile.set("${GearRatios.GEAR4.key}.${GearRatios.GEAR4.gear}", currentView.findViewById<EditText>(R.id.editTextGear4).text.toString())
-            ConfigFile.set("${GearRatios.GEAR5.key}.${GearRatios.GEAR5.gear}", currentView.findViewById<EditText>(R.id.editTextGear5).text.toString())
-            ConfigFile.set("${GearRatios.GEAR6.key}.${GearRatios.GEAR6.gear}", currentView.findViewById<EditText>(R.id.editTextGear6).text.toString())
-            ConfigFile.set("${GearRatios.GEAR7.key}.${GearRatios.GEAR7.gear}", currentView.findViewById<EditText>(R.id.editTextGear7).text.toString())
-            ConfigFile.set("${GearRatios.FINAL.key}.${GearRatios.FINAL.gear}", currentView.findViewById<EditText>(R.id.editTextGearFinal).text.toString())
+            ConfigFile.set(
+                "${GearRatios.GEAR1.key}.${GearRatios.GEAR1.gear}",
+                currentView.findViewById<EditText>(R.id.editTextGear1).text.toString()
+            )
+            ConfigFile.set(
+                "${GearRatios.GEAR2.key}.${GearRatios.GEAR2.gear}",
+                currentView.findViewById<EditText>(R.id.editTextGear2).text.toString()
+            )
+            ConfigFile.set(
+                "${GearRatios.GEAR3.key}.${GearRatios.GEAR3.gear}",
+                currentView.findViewById<EditText>(R.id.editTextGear3).text.toString()
+            )
+            ConfigFile.set(
+                "${GearRatios.GEAR4.key}.${GearRatios.GEAR4.gear}",
+                currentView.findViewById<EditText>(R.id.editTextGear4).text.toString()
+            )
+            ConfigFile.set(
+                "${GearRatios.GEAR5.key}.${GearRatios.GEAR5.gear}",
+                currentView.findViewById<EditText>(R.id.editTextGear5).text.toString()
+            )
+            ConfigFile.set(
+                "${GearRatios.GEAR6.key}.${GearRatios.GEAR6.gear}",
+                currentView.findViewById<EditText>(R.id.editTextGear6).text.toString()
+            )
+            ConfigFile.set(
+                "${GearRatios.GEAR7.key}.${GearRatios.GEAR7.gear}",
+                currentView.findViewById<EditText>(R.id.editTextGear7).text.toString()
+            )
+            ConfigFile.set(
+                "${GearRatios.FINAL.key}.${GearRatios.FINAL.gear}",
+                currentView.findViewById<EditText>(R.id.editTextGearFinal).text.toString()
+            )
         }
         DebugLog.d(TAG, "doSave")
     }

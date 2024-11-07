@@ -15,7 +15,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <ProgressBar
         android:id="@+id/progressBarFlash"
@@ -23,10 +23,10 @@
         android:layout_width="0dp"
         android:layout_height="48dp"
         android:scaleY="6.0"
-        app:layout_constraintTop_toBottomOf="@+id/listViewMessage"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/listViewMessage" />
 
     <com.app.simostools.SwitchButton
         android:id="@+id/buttonFlashCAL"
@@ -34,10 +34,10 @@
         android:layout_height="96dp"
         android:text="@string/button_flash_cal"
         android:textSize="32sp"
+        app:layout_constraintBottom_toTopOf="@+id/buttonTuneInfo"
         app:layout_constraintEnd_toStartOf="@+id/buttonFlashFull"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/progressBarFlash"
-        app:layout_constraintBottom_toTopOf="@+id/buttonTuneInfo"/>
+        app:layout_constraintTop_toBottomOf="@+id/progressBarFlash" />
 
     <com.app.simostools.SwitchButton
         android:id="@+id/buttonFlashFull"
@@ -57,9 +57,9 @@
         android:text="@string/button_tune_info"
         android:textSize="32sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/buttonBack"
-        app:layout_constraintTop_toBottomOf="@+id/buttonFlashCAL"/>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/buttonFlashCAL" />
 
     <com.app.simostools.SwitchButton
         android:id="@+id/buttonBack"
@@ -70,6 +70,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/buttonTuneInfo"
-        app:layout_constraintTop_toBottomOf="@+id/buttonFlashFull"/>
+        app:layout_constraintTop_toBottomOf="@+id/buttonFlashFull" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

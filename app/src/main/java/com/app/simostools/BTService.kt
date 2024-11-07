@@ -1,19 +1,32 @@
 package com.app.simostools
 
-import android.app.*
-import android.bluetooth.*
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGatt.CONNECTION_PRIORITY_HIGH
+import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
+import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.ParcelUuid
-import java.util.*
+import androidx.core.app.ServiceCompat
+import java.util.Timer
+import java.util.TimerTask
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Semaphore
 
@@ -50,7 +63,7 @@ class BLEHeader {
         rxID = ((bArray[3] and 0xFF) shl 8) + (bArray[2] and 0xFF)
         txID = ((bArray[5] and 0xFF) shl 8) + (bArray[4] and 0xFF)
         cmdSize = ((bArray[7] and 0xFF) shl 8) + (bArray[6] and 0xFF)
-        tickCount = ((rxID  and 0xFFFF) shl 16) + (txID  and 0xFFFF)
+        tickCount = ((rxID and 0xFFFF) shl 16) + (txID and 0xFFFF)
     }
 
     fun size(): Int {
@@ -62,57 +75,68 @@ class BLEHeader {
     }
 }
 
-class BTService: Service() {
+class BTService : Service() {
     //constants
     val TAG = "BTService"
 
     // Member fields
-    private var mScanning: Boolean                              = false
-    private var mConnectionState: BLEConnectionState            = BLEConnectionState.NONE
-    private val mWriteSemaphore: Semaphore                      = Semaphore(1)
-    private val mReadQueue: ConcurrentLinkedQueue<ByteArray>    = ConcurrentLinkedQueue<ByteArray>()
-    private val mWriteQueue: ConcurrentLinkedQueue<ByteArray>   = ConcurrentLinkedQueue<ByteArray>()
-    private var mBluetoothGatt: BluetoothGatt?                  = null
-    private var mBluetoothDevice: BluetoothDevice?              = null
-    private var mConnectionThread: ConnectionThread?            = null
-    private var mLogWriteState: Boolean                         = false
-    private var mScanningTimer: Timer?                          = null
-    private var mMTUSize: Int                                   = 23
-    private var mFinished: Boolean                              = false
-    private var mStarted: Boolean                               = false
+    private var mScanning: Boolean = false
+    private var mConnectionState: BLEConnectionState = BLEConnectionState.NONE
+    private val mWriteSemaphore: Semaphore = Semaphore(1)
+    private val mReadQueue: ConcurrentLinkedQueue<ByteArray> = ConcurrentLinkedQueue<ByteArray>()
+    private val mWriteQueue: ConcurrentLinkedQueue<ByteArray> = ConcurrentLinkedQueue<ByteArray>()
+    private var mBluetoothGatt: BluetoothGatt? = null
+    private var mBluetoothDevice: BluetoothDevice? = null
+    private var mConnectionThread: ConnectionThread? = null
+    private var mLogWriteState: Boolean = false
+    private var mScanningTimer: Timer? = null
+    private var mMTUSize: Int = 23
+    private var mFinished: Boolean = false
+    private var mStarted: Boolean = false
 
     //Gatt additional properties
-    private fun BluetoothGattCharacteristic.isReadable(): Boolean = containsProperty(BluetoothGattCharacteristic.PROPERTY_READ)
-    private fun BluetoothGattCharacteristic.isWritable(): Boolean = containsProperty(BluetoothGattCharacteristic.PROPERTY_WRITE)
-    private fun BluetoothGattCharacteristic.isWritableWithoutResponse(): Boolean = containsProperty(BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE)
-    private fun BluetoothGattCharacteristic.isIndicatable(): Boolean = containsProperty(BluetoothGattCharacteristic.PROPERTY_INDICATE)
-    private fun BluetoothGattCharacteristic.isNotifiable(): Boolean = containsProperty(BluetoothGattCharacteristic.PROPERTY_NOTIFY)
-    private fun BluetoothGattCharacteristic.containsProperty(property: Int): Boolean = properties and property != 0
+    private fun BluetoothGattCharacteristic.isReadable(): Boolean =
+        containsProperty(BluetoothGattCharacteristic.PROPERTY_READ)
+
+    private fun BluetoothGattCharacteristic.isWritable(): Boolean =
+        containsProperty(BluetoothGattCharacteristic.PROPERTY_WRITE)
+
+    private fun BluetoothGattCharacteristic.isWritableWithoutResponse(): Boolean =
+        containsProperty(BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE)
+
+    private fun BluetoothGattCharacteristic.isIndicatable(): Boolean =
+        containsProperty(BluetoothGattCharacteristic.PROPERTY_INDICATE)
+
+    private fun BluetoothGattCharacteristic.isNotifiable(): Boolean =
+        containsProperty(BluetoothGattCharacteristic.PROPERTY_NOTIFY)
+
+    private fun BluetoothGattCharacteristic.containsProperty(property: Int): Boolean =
+        properties and property != 0
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
 
-        if(!mFinished) {
+        if (!mFinished) {
             when (intent.action) {
-                BTServiceTask.STOP_SERVICE.toString()       -> doStopService(startId)
-                BTServiceTask.START_SERVICE.toString()      -> doStartService()
-                BTServiceTask.REQ_STATUS.toString()         -> sendStatus()
-                BTServiceTask.DO_CONNECT.toString()         -> doConnect()
-                BTServiceTask.DO_DISCONNECT.toString()      -> doDisconnect()
-                BTServiceTask.DO_START_LOG.toString()       -> mConnectionThread?.setTaskState(UDSTask.LOGGING)
-                BTServiceTask.DO_START_FLASH.toString()     -> mConnectionThread?.setTaskState(UDSTask.FLASHING)
-                BTServiceTask.DO_GET_TUNE_INFO.toString()     -> mConnectionThread?.setTaskState(UDSTask.TUNE_INFO)
-                BTServiceTask.DO_GET_INFO.toString()        -> mConnectionThread?.setTaskState(UDSTask.INFO)
-                BTServiceTask.DO_CLEAR_DTC.toString()       -> mConnectionThread?.setTaskState(UDSTask.DTC_CLEAR)
-                BTServiceTask.DO_GET_DTC.toString()         -> mConnectionThread?.setTaskState(UDSTask.DTC_GET)
-                BTServiceTask.DO_SET_ADAPTER.toString()     -> mConnectionThread?.setTaskState(UDSTask.SET_ADAPTER)
-                BTServiceTask.DO_STOP_TASK.toString()       -> mConnectionThread?.setTaskState(UDSTask.NONE)
-                BTServiceTask.FLASH_CONFIRMED.toString()    -> confirmFlashProceed()
-                BTServiceTask.FLASH_CANCELED.toString()     -> cancelFlash()
+                BTServiceTask.STOP_SERVICE.toString() -> doStopService(startId)
+                BTServiceTask.START_SERVICE.toString() -> doStartService()
+                BTServiceTask.REQ_STATUS.toString() -> sendStatus()
+                BTServiceTask.DO_CONNECT.toString() -> doConnect()
+                BTServiceTask.DO_DISCONNECT.toString() -> doDisconnect()
+                BTServiceTask.DO_START_LOG.toString() -> mConnectionThread?.setTaskState(UDSTask.LOGGING)
+                BTServiceTask.DO_START_FLASH.toString() -> mConnectionThread?.setTaskState(UDSTask.FLASHING)
+                BTServiceTask.DO_GET_TUNE_INFO.toString() -> mConnectionThread?.setTaskState(UDSTask.TUNE_INFO)
+                BTServiceTask.DO_GET_INFO.toString() -> mConnectionThread?.setTaskState(UDSTask.INFO)
+                BTServiceTask.DO_CLEAR_DTC.toString() -> mConnectionThread?.setTaskState(UDSTask.DTC_CLEAR)
+                BTServiceTask.DO_GET_DTC.toString() -> mConnectionThread?.setTaskState(UDSTask.DTC_GET)
+                BTServiceTask.DO_SET_ADAPTER.toString() -> mConnectionThread?.setTaskState(UDSTask.SET_ADAPTER)
+                BTServiceTask.DO_STOP_TASK.toString() -> mConnectionThread?.setTaskState(UDSTask.NONE)
+                BTServiceTask.FLASH_CONFIRMED.toString() -> confirmFlashProceed()
+                BTServiceTask.FLASH_CANCELED.toString() -> cancelFlash()
             }
         }
 
-        return if(mFinished) {
+        return if (mFinished) {
             START_NOT_STICKY
         } else {
             // If we get killed, after returning from here, restart
@@ -141,7 +165,7 @@ class BTService: Service() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             super.onScanResult(callbackType, result)
             result.device?.let { device ->
-                val name = device.name?: ""
+                val name = device.name ?: ""
                 DebugLog.i(TAG, "Found BLE device $name")
 
                 if (mBluetoothDevice == null && name.contentEquals(ConfigSettings.ADAPTER_NAME.value.toString())) {
@@ -171,7 +195,7 @@ class BTService: Service() {
             val deviceName = gatt.device.name
 
             //If we are connected to the wrong device close and return
-            if(mBluetoothDevice != gatt.device) {
+            if (mBluetoothDevice != gatt.device) {
                 DebugLog.w(TAG, "Connection made to wrong device, connection closed: $deviceName")
                 gatt.safeClose()
                 return
@@ -197,10 +221,12 @@ class BTService: Service() {
                     DebugLog.i(TAG, "Successfully disconnected from $deviceName")
 
                     //disable the read notification
-                    disableNotifications(gatt.getService(BLE_SERVICE_UUID).getCharacteristic(BLE_DATA_RX_UUID))
+                    disableNotifications(
+                        gatt.getService(BLE_SERVICE_UUID).getCharacteristic(BLE_DATA_RX_UUID)
+                    )
 
                     //If gatt doesn't match ours make sure we close it
-                    if(gatt != mBluetoothGatt) {
+                    if (gatt != mBluetoothGatt) {
                         gatt.safeClose()
                     }
 
@@ -211,7 +237,7 @@ class BTService: Service() {
                 DebugLog.i(TAG, "Error $status encountered for $deviceName! Disconnecting...")
 
                 //If gatt doesn't match ours make sure we close it
-                if(gatt != mBluetoothGatt) {
+                if (gatt != mBluetoothGatt) {
                     gatt.safeClose()
                 }
 
@@ -228,13 +254,13 @@ class BTService: Service() {
             super.onServicesDiscovered(gatt, status)
 
             //If gatt doesn't match ours make sure we close it
-            if(gatt != mBluetoothGatt) {
+            if (gatt != mBluetoothGatt) {
                 gatt.safeClose()
                 return
             }
 
             //If success request MTU
-            if(status == BluetoothGatt.GATT_SUCCESS) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
                 //Request new MTU
                 with(gatt) {
                     DebugLog.i(TAG, "Discovered ${services.size} services for ${device.name}")
@@ -243,7 +269,7 @@ class BTService: Service() {
                     try {
                         requestMtu(BLE_GATT_MTU_SIZE)
                     } catch (e: Exception) {
-                        DebugLog.e(TAG,"Exception while discovering services:", e)
+                        DebugLog.e(TAG, "Exception while discovering services:", e)
                         doDisconnect()
                     }
                 }
@@ -262,14 +288,20 @@ class BTService: Service() {
         override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
             super.onMtuChanged(gatt, mtu, status)
 
-            DebugLog.d(TAG, "ATT MTU changed to $mtu, success: ${status == BluetoothGatt.GATT_SUCCESS}")
+            DebugLog.d(
+                TAG,
+                "ATT MTU changed to $mtu, success: ${status == BluetoothGatt.GATT_SUCCESS}"
+            )
 
             //get device name
             val deviceName = gatt.device.name
-            if(status == BluetoothGatt.GATT_SUCCESS) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
                 //Make sure we are on the right connection
-                if(gatt != mBluetoothGatt) {
-                    DebugLog.i(TAG, "Gatt does not match mBluetoothGatt, closing connection to $deviceName")
+                if (gatt != mBluetoothGatt) {
+                    DebugLog.i(
+                        TAG,
+                        "Gatt does not match mBluetoothGatt, closing connection to $deviceName"
+                    )
 
                     gatt.safeClose()
                     return
@@ -282,14 +314,16 @@ class BTService: Service() {
                 setConnectionState(BLEConnectionState.CONNECTED)
                 try {
                     gatt.requestConnectionPriority(CONNECTION_PRIORITY_HIGH)
-                    enableNotifications(gatt.getService(BLE_SERVICE_UUID)!!.getCharacteristic(BLE_DATA_RX_UUID))
+                    enableNotifications(
+                        gatt.getService(BLE_SERVICE_UUID)!!.getCharacteristic(BLE_DATA_RX_UUID)
+                    )
                 } catch (e: Exception) {
-                    DebugLog.e(TAG,"Exception enabling ble notifications.", e)
+                    DebugLog.e(TAG, "Exception enabling ble notifications.", e)
                     doDisconnect()
                 }
             } else {
                 //If gatt doesn't match ours make sure we close it
-                if(gatt != mBluetoothGatt) {
+                if (gatt != mBluetoothGatt) {
                     gatt.safeClose()
                 }
 
@@ -302,28 +336,39 @@ class BTService: Service() {
             }
         }
 
-        override fun onDescriptorWrite(gatt: BluetoothGatt?, descriptor: BluetoothGattDescriptor?, status: Int) {
+        override fun onDescriptorWrite(
+            gatt: BluetoothGatt?,
+            descriptor: BluetoothGattDescriptor?,
+            status: Int
+        ) {
             super.onDescriptorWrite(gatt, descriptor, status)
             when (status) {
                 BluetoothGatt.GATT_SUCCESS -> {
                     DebugLog.d("onDescWrite", "success ${descriptor.toString()}")
                 }
+
                 else -> {
                     DebugLog.w("onDescWrite", "failed ${descriptor.toString()}")
                 }
             }
         }
 
-        override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
+        override fun onCharacteristicRead(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            status: Int
+        ) {
             super.onCharacteristicRead(gatt, characteristic, status)
             with(characteristic) {
                 when (status) {
                     BluetoothGatt.GATT_SUCCESS -> {
                         DebugLog.d(TAG, "Read characteristic $uuid | length: ${value.count()}")
                     }
+
                     BluetoothGatt.GATT_READ_NOT_PERMITTED -> {
                         DebugLog.w(TAG, "Read not permitted for $uuid!")
                     }
+
                     else -> {
                         DebugLog.w(TAG, "Characteristic read failed for $uuid, error: $status")
                     }
@@ -331,37 +376,56 @@ class BTService: Service() {
             }
         }
 
-        override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
+        override fun onCharacteristicWrite(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            status: Int
+        ) {
             super.onCharacteristicWrite(gatt, characteristic, status)
             with(characteristic) {
                 when (status) {
                     BluetoothGatt.GATT_SUCCESS -> {
-                        DebugLog.d("BluetoothGattCallback", "Wrote to characteristic $uuid | length: ${value.count()}")
+                        DebugLog.d(
+                            "BluetoothGattCallback",
+                            "Wrote to characteristic $uuid | length: ${value.count()}"
+                        )
                     }
+
                     BluetoothGatt.GATT_INVALID_ATTRIBUTE_LENGTH -> {
                         DebugLog.w("BluetoothGattCallback", "Write exceeded connection ATT MTU!")
                     }
+
                     BluetoothGatt.GATT_WRITE_NOT_PERMITTED -> {
                         DebugLog.w("BluetoothGattCallback", "Write not permitted for $uuid!")
                     }
+
                     else -> {
-                        DebugLog.w("BluetoothGattCallback", "Characteristic write failed for $uuid, error: $status")
+                        DebugLog.w(
+                            "BluetoothGattCallback",
+                            "Characteristic write failed for $uuid, error: $status"
+                        )
                     }
                 }
             }
             mWriteSemaphore.release()
         }
 
-        override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+        override fun onCharacteristicChanged(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic
+        ) {
             super.onCharacteristicChanged(gatt, characteristic)
             with(characteristic) {
-                DebugLog.d("BluetoothGattCallback", "Read from characteristic $uuid | length: ${value.count()}")
+                DebugLog.d(
+                    "BluetoothGattCallback",
+                    "Read from characteristic $uuid | length: ${value.count()}"
+                )
 
                 //parse packet and check for multiple responses
                 val bleHeader = BLEHeader()
-                while(value.count() > 0) {
+                while (value.count() > 0) {
                     bleHeader.fromByteArray(value)
-                    value = if(bleHeader.cmdSize+8 <= value.count()) {
+                    value = if (bleHeader.cmdSize + 8 <= value.count()) {
                         mReadQueue.add(value.copyOfRange(0, bleHeader.cmdSize + 8))
                         value.copyOfRange(bleHeader.cmdSize + 8, value.count())
                     } else {
@@ -380,21 +444,28 @@ class BTService: Service() {
 
         try {
             this.close()
-        } catch(e: Exception){
+        } catch (e: Exception) {
             DebugLog.e(TAG, "Exception while closing connection to $deviceName", e)
         }
     }
 
     private fun BluetoothGatt.printGattTable() {
         if (services.isEmpty()) {
-            DebugLog.w("printGattTable", "No service and characteristic available, call discoverServices() first?")
+            DebugLog.w(
+                "printGattTable",
+                "No service and characteristic available, call discoverServices() first?"
+            )
             return
         }
         services.forEach { service ->
-            val characteristicsTable = service.characteristics.joinToString(separator = "\n|--", prefix = "|--") {
-                it.uuid.toString()
-            }
-            DebugLog.d("printGattTable", "\nService ${service.uuid}\nCharacteristics:\n$characteristicsTable")
+            val characteristicsTable =
+                service.characteristics.joinToString(separator = "\n|--", prefix = "|--") {
+                    it.uuid.toString()
+                }
+            DebugLog.d(
+                "printGattTable",
+                "\nService ${service.uuid}\nCharacteristics:\n$characteristicsTable"
+            )
         }
     }
 
@@ -410,45 +481,65 @@ class BTService: Service() {
             characteristic.isIndicatable() -> BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
             characteristic.isNotifiable() -> BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
             else -> {
-                DebugLog.w("ConnectionManager", "${characteristic.uuid} doesn't support notifications/indications")
+                DebugLog.w(
+                    "ConnectionManager",
+                    "${characteristic.uuid} doesn't support notifications/indications"
+                )
                 return
             }
         }
 
         characteristic.getDescriptor(BLE_CCCD_UUID)?.let { cccDescriptor ->
             if (mBluetoothGatt?.setCharacteristicNotification(characteristic, true) == false) {
-                DebugLog.w("ConnectionManager", "setCharacteristicNotification failed for ${characteristic.uuid}")
+                DebugLog.w(
+                    "ConnectionManager",
+                    "setCharacteristicNotification failed for ${characteristic.uuid}"
+                )
                 return
             }
             writeDescriptor(cccDescriptor, payload)
-        } ?: DebugLog.w("ConnectionManager", "${characteristic.uuid} doesn't contain the CCC descriptor!")
+        } ?: DebugLog.w(
+            "ConnectionManager",
+            "${characteristic.uuid} doesn't contain the CCC descriptor!"
+        )
     }
 
     private fun disableNotifications(characteristic: BluetoothGattCharacteristic) {
         if (!characteristic.isNotifiable() && !characteristic.isIndicatable()) {
-            DebugLog.w("ConnectionManager", "${characteristic.uuid} doesn't support indications/notifications")
+            DebugLog.w(
+                "ConnectionManager",
+                "${characteristic.uuid} doesn't support indications/notifications"
+            )
             return
         }
 
         characteristic.getDescriptor(BLE_CCCD_UUID)?.let { cccDescriptor ->
             if (mBluetoothGatt?.setCharacteristicNotification(characteristic, false) == false) {
-                DebugLog.w("ConnectionManager", "setCharacteristicNotification failed for ${characteristic.uuid}")
+                DebugLog.w(
+                    "ConnectionManager",
+                    "setCharacteristicNotification failed for ${characteristic.uuid}"
+                )
                 return
             }
             writeDescriptor(cccDescriptor, BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE)
-        } ?: DebugLog.w("ConnectionManager", "${characteristic.uuid} doesn't contain the CCC descriptor!")
+        } ?: DebugLog.w(
+            "ConnectionManager",
+            "${characteristic.uuid} doesn't contain the CCC descriptor!"
+        )
     }
 
     @Synchronized
     private fun stopScanning() {
-        if(mScanning) {
+        if (mScanning) {
             //Disable scan timer
             mScanningTimer?.cancel()
             mScanningTimer?.purge()
             mScanningTimer = null
 
             DebugLog.i(TAG, "Stop Scanning.")
-            (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter.bluetoothLeScanner.stopScan(mScanCallback)
+            (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter.bluetoothLeScanner.stopScan(
+                mScanCallback
+            )
             mScanning = false
         }
     }
@@ -475,18 +566,18 @@ class BTService: Service() {
     }
 
     @Synchronized
-    private fun confirmFlashProceed(){
+    private fun confirmFlashProceed() {
         UDSFlasher.setFlashConfirmed(true)
     }
 
     @Synchronized
-    private fun cancelFlash(){
+    private fun cancelFlash() {
         UDSFlasher.cancelFlash()
     }
 
     @Synchronized
     private fun doStartService() {
-        if(!mStarted) {
+        if (!mStarted) {
             mStarted = true
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
@@ -502,8 +593,15 @@ class BTService: Service() {
                 .setSmallIcon(R.drawable.simostools)
                 .build()
 
+            val foregroundServiceTypes =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED
+                } else {
+                    TODO("VERSION.SDK_INT < Q")
+                }
+
             // Notification ID cannot be 0.
-            startForeground(1, notification)
+            ServiceCompat.startForeground(this, 1, notification, foregroundServiceTypes)
         }
     }
 
@@ -537,7 +635,11 @@ class BTService: Service() {
 
         //Start scanning for BLE devices
         val settings = ScanSettings.Builder().build()
-        (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter.bluetoothLeScanner.startScan(filter, settings, mScanCallback)
+        (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter.bluetoothLeScanner.startScan(
+            filter,
+            settings,
+            mScanCallback
+        )
         mScanning = true
     }
 
@@ -558,7 +660,7 @@ class BTService: Service() {
             mBluetoothGatt = null
         }
 
-        if(!mFinished) {
+        if (!mFinished) {
             //Set new connection status
             setConnectionState(newState)
         }
@@ -568,7 +670,7 @@ class BTService: Service() {
     private fun doTimeout() {
         stopScanning()
 
-        if(mConnectionState != BLEConnectionState.CONNECTED) {
+        if (mConnectionState != BLEConnectionState.CONNECTED) {
             //Set new connection status
             setConnectionState(BLEConnectionState.NONE)
         }
@@ -592,12 +694,11 @@ class BTService: Service() {
     }
 
     @Synchronized
-    private fun setConnectionState(newState: BLEConnectionState)
-    {
-        if(mConnectionState == newState)
+    private fun setConnectionState(newState: BLEConnectionState) {
+        if (mConnectionState == newState)
             return
 
-        when(newState) {
+        when (newState) {
             BLEConnectionState.ERROR -> closeConnectionThread()
             BLEConnectionState.NONE -> closeConnectionThread()
             BLEConnectionState.CONNECTING -> {}
@@ -615,7 +716,7 @@ class BTService: Service() {
 
     @Synchronized
     private fun sendStatus() {
-        if(mConnectionThread != null) {
+        if (mConnectionThread != null) {
             mConnectionThread?.sendTaskState()
         } else {
             val intentMessage = Intent(GUIMessage.STATE_CONNECTION.toString())
@@ -624,15 +725,15 @@ class BTService: Service() {
         }
     }
 
-    private inner class ConnectionThread: Thread() {
-        private var mTask: UDSTask              = UDSTask.NONE
-        private var mTaskNext: UDSTask          = UDSTask.NONE
-        private var mTaskTick: Int              = 0
-        private var mTaskTime: Long             = 0
-        private var mTaskTimeNext: Long         = 0
-        private var mTaskTimeOut: Long          = 0
-        private var mTaskNextBroadcast: Long    = 0
-        private var mPasswordAccepted: Boolean  = true
+    private inner class ConnectionThread : Thread() {
+        private var mTask: UDSTask = UDSTask.NONE
+        private var mTaskNext: UDSTask = UDSTask.NONE
+        private var mTaskTick: Int = 0
+        private var mTaskTime: Long = 0
+        private var mTaskTimeNext: Long = 0
+        private var mTaskTimeOut: Long = 0
+        private var mTaskNextBroadcast: Long = 0
+        private var mPasswordAccepted: Boolean = true
 
         init {
             setTaskState(UDSTask.NONE)
@@ -650,10 +751,11 @@ class BTService: Service() {
                     try {
                         val buff = mWriteQueue.poll()
                         buff?.let {
-                            DebugLog.c(TAG, buff,true)
+                            DebugLog.c(TAG, buff, true)
 
                             mBluetoothGatt?.let { gatt ->
-                                val txChar = gatt.getService(BLE_SERVICE_UUID)!!.getCharacteristic(BLE_DATA_TX_UUID)
+                                val txChar = gatt.getService(BLE_SERVICE_UUID)!!
+                                    .getCharacteristic(BLE_DATA_TX_UUID)
                                 val writeType = when {
                                     txChar.isWritable() -> BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
                                     txChar.isWritableWithoutResponse() -> BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
@@ -690,18 +792,18 @@ class BTService: Service() {
                 }
 
                 //Ready for next task?
-                if(mTaskNext != UDSTask.NONE) {
-                    if(mTaskTimeNext < System.currentTimeMillis()) {
+                if (mTaskNext != UDSTask.NONE) {
+                    if (mTaskTimeNext < System.currentTimeMillis()) {
                         DebugLog.i(TAG, "Task finished.")
                         startNextTask()
-                    } else if(mTaskTimeOut < System.currentTimeMillis()) {
+                    } else if (mTaskTimeOut < System.currentTimeMillis()) {
                         //Write debug log
                         DebugLog.w(TAG, "Task failed to finish.")
                         startNextTask()
                     }
                 } else {
                     //Have we sat idle waiting without receiving a packet?
-                    if(mTaskTimeNext < System.currentTimeMillis()) {
+                    if (mTaskTimeNext < System.currentTimeMillis()) {
                         DebugLog.d(TAG, "Task timeout.")
 
                         //Process packet
@@ -717,31 +819,30 @@ class BTService: Service() {
         }
 
         @Synchronized
-        fun setTaskState(newTask: UDSTask)
-        {
+        fun setTaskState(newTask: UDSTask) {
             //if we are not connected abort
             if (mConnectionState != BLEConnectionState.CONNECTED) {
                 mTask = UDSTask.NONE
                 return
             }
 
-            if(newTask == mTask)
+            if (newTask == mTask)
                 return
 
             //queue up next task and set start time
-            mTaskTimeNext   = System.currentTimeMillis() + TASK_END_DELAY
-            mTaskTimeOut    = System.currentTimeMillis() + TASK_END_TIMEOUT
-            mTaskNext       = newTask
+            mTaskTimeNext = System.currentTimeMillis() + TASK_END_DELAY
+            mTaskTimeOut = System.currentTimeMillis() + TASK_END_TIMEOUT
+            mTaskNext = newTask
 
             //If we are doing something call for a stop
-            if(mTask != UDSTask.NONE) {
+            if (mTask != UDSTask.NONE) {
                 stopTask()
             }
         }
 
         @Synchronized
         fun sendTaskState() {
-            if(mTask == UDSTask.LOGGING && UDSLogger.isEnabled()) {
+            if (mTask == UDSTask.LOGGING && UDSLogger.isEnabled()) {
                 val intentMessage = Intent(GUIMessage.WRITE_LOG.toString())
                 intentMessage.putExtra(GUIMessage.WRITE_LOG.toString(), UDSLogger.isEnabled())
                 sendBroadcast(intentMessage)
@@ -766,9 +867,10 @@ class BTService: Service() {
 
                     //Do we need to split the packet?
                     var packetSize = mMTUSize - 3
-                    if(buffer.count() > packetSize) {
+                    if (buffer.count() > packetSize) {
                         //Set split packet flag
-                        it[1] = ((it[1].toInt() or BLECommandFlags.SPLIT_PK.value) and 0xFF).toByte()
+                        it[1] =
+                            ((it[1].toInt() or BLECommandFlags.SPLIT_PK.value) and 0xFF).toByte()
 
                         //Add the first split packet
                         mWriteQueue.add(buffer.copyOfRange(0, packetSize))
@@ -778,27 +880,32 @@ class BTService: Service() {
                         packetSize -= BLEHeader().size_partial()
                         var packetCount = 1
                         while (buffer.count() > 0) {
-                            val dataSize = if(buffer.count() > packetSize) packetSize
-                                            else buffer.count()
-                            mWriteQueue.add(byteArrayOf(BLE_HEADER_PT.toByte(), (packetCount++ and 0xFF).toByte()) + buffer.copyOfRange(0, dataSize))
+                            val dataSize = if (buffer.count() > packetSize) packetSize
+                            else buffer.count()
+                            mWriteQueue.add(
+                                byteArrayOf(
+                                    BLE_HEADER_PT.toByte(),
+                                    (packetCount++ and 0xFF).toByte()
+                                ) + buffer.copyOfRange(0, dataSize)
+                            )
                             buffer = buffer.copyOfRange(dataSize, buffer.count())
                         }
                     } else {
                         //Packet fits MTU
                         mWriteQueue.add(buffer)
                     }
-                } catch(e: Exception) {
+                } catch (e: Exception) {
                     DebugLog.e(TAG, "Exception while writing packet.", e)
                 }
             } ?: DebugLog.w(TAG, "Unable to write null packet.")
         }
 
         private fun startNextTask() {
-            mTaskTimeNext   = System.currentTimeMillis() + TASK_BUMP_DELAY
-            mTask           = mTaskNext
-            mTaskNext       = UDSTask.NONE
-            mTaskTick       = 0
-            mTaskTime       = System.currentTimeMillis()
+            mTaskTimeNext = System.currentTimeMillis() + TASK_BUMP_DELAY
+            mTask = mTaskNext
+            mTaskNext = UDSTask.NONE
+            mTaskTick = 0
+            mTaskTime = System.currentTimeMillis()
 
             //Write debug log
             DebugLog.i(TAG, "Task started: $mTask")
@@ -806,14 +913,14 @@ class BTService: Service() {
             sendTaskState()
 
             when (mTask) {
-                UDSTask.LOGGING     -> startTaskLogging()
-                UDSTask.FLASHING    -> startTaskFlashing()
-                UDSTask.TUNE_INFO   -> startTaskGetTuneInfo()
-                UDSTask.INFO        -> startTaskGetInfo()
-                UDSTask.DTC_GET     -> startTaskGetDTC()
-                UDSTask.DTC_CLEAR   -> startTaskClearDTC()
+                UDSTask.LOGGING -> startTaskLogging()
+                UDSTask.FLASHING -> startTaskFlashing()
+                UDSTask.TUNE_INFO -> startTaskGetTuneInfo()
+                UDSTask.INFO -> startTaskGetInfo()
+                UDSTask.DTC_GET -> startTaskGetDTC()
+                UDSTask.DTC_CLEAR -> startTaskClearDTC()
                 UDSTask.SET_ADAPTER -> startTaskSetAdapter()
-                UDSTask.NONE        -> {}
+                UDSTask.NONE -> {}
             }
         }
 
@@ -827,13 +934,13 @@ class BTService: Service() {
             sendTaskState()
 
             //Set LED to green
-            setBridgeLED(0,0x80, 0)
+            setBridgeLED(0, 0x80, 0)
 
             //clear current persist messages
             clearBridgePersist()
         }
 
-        private fun startTaskLogging(){
+        private fun startTaskLogging() {
             //set connection settings
             try {
                 setBridgePersistDelay(1000 / ConfigSettings.LOGGING_RATE.toInt())
@@ -848,17 +955,17 @@ class BTService: Service() {
             writePacket(UDSLogger.startTask(0))
         }
 
-        private fun startTaskFlashing(){
-            DebugLog.d(TAG,"Setting stmin to 350")
+        private fun startTaskFlashing() {
+            DebugLog.d(TAG, "Setting stmin to 350")
             setBridgeSTMIN(350)
             writePacket(UDSFlasher.startTask(0))
         }
 
-        private fun startTaskGetInfo(){
+        private fun startTaskGetInfo() {
             writePacket(UDSInfo.startTask(0))
         }
 
-        private fun startTaskGetTuneInfo(){
+        private fun startTaskGetTuneInfo() {
             writePacket(UDSInfo.startTask(TUNE_INFO_PIDS[0]))
         }
 
@@ -876,15 +983,15 @@ class BTService: Service() {
         }
 
         private fun processPacket(buff: ByteArray?) {
-            if(mPasswordAccepted) {
+            if (mPasswordAccepted) {
                 when (mTask) {
-                    UDSTask.NONE        -> processPacketNone(buff)
-                    UDSTask.LOGGING     -> processPacketLogging(buff)
-                    UDSTask.FLASHING    -> processPacketFlashing(buff)
-                    UDSTask.TUNE_INFO   -> processPacketTuneInfo(buff)
-                    UDSTask.INFO        -> processPacketGetInfo(buff)
-                    UDSTask.DTC_GET     -> processPacketGetDTC(buff)
-                    UDSTask.DTC_CLEAR   -> processPacketClearDTC(buff)
+                    UDSTask.NONE -> processPacketNone(buff)
+                    UDSTask.LOGGING -> processPacketLogging(buff)
+                    UDSTask.FLASHING -> processPacketFlashing(buff)
+                    UDSTask.TUNE_INFO -> processPacketTuneInfo(buff)
+                    UDSTask.INFO -> processPacketGetInfo(buff)
+                    UDSTask.DTC_GET -> processPacketGetDTC(buff)
+                    UDSTask.DTC_CLEAR -> processPacketClearDTC(buff)
                     UDSTask.SET_ADAPTER -> processPacketSetAdapter(buff)
                 }
 
@@ -909,7 +1016,7 @@ class BTService: Service() {
                     if (it.count() == BLEHeader().size() + 1) {
                         val bleHeader = BLEHeader()
                         bleHeader.fromByteArray(it)
-                        if(bleHeader.isValid() && it[8] == 0xFF.toByte()) {
+                        if (bleHeader.isValid() && it[8] == 0xFF.toByte()) {
                             DebugLog.i(TAG, "Password accepted.")
                             mPasswordAccepted = true
                         } else {
@@ -923,7 +1030,7 @@ class BTService: Service() {
 
         private fun processPacketNone(buff: ByteArray?) {
             buff?.let {
-                if(buff.count() > 8) {
+                if (buff.count() > 8) {
                     //Broadcast a new message
                     val intentMessage = Intent(GUIMessage.READ.toString())
                     intentMessage.putExtra(
@@ -947,7 +1054,7 @@ class BTService: Service() {
                         DebugLog.w(TAG, "Unable to initialize logging, UDS Error: $result")
                         setTaskState(UDSTask.NONE)
                     } else { //else continue init
-                        writePacket(UDSLogger.startTask(mTaskTick+1))
+                        writePacket(UDSLogger.startTask(mTaskTick + 1))
                     }
                 } else { //We are receiving data
                     if (result != UDSReturn.OK) {
@@ -958,11 +1065,15 @@ class BTService: Service() {
                         if (System.currentTimeMillis() > mTaskNextBroadcast) {
                             val intentMessage = Intent(GUIMessage.READ_LOG.toString())
                             intentMessage.putExtra("readCount", mTaskTick)
-                            intentMessage.putExtra("readTime", System.currentTimeMillis() - mTaskTime)
+                            intentMessage.putExtra(
+                                "readTime",
+                                System.currentTimeMillis() - mTaskTime
+                            )
                             intentMessage.putExtra("readResult", result)
                             sendBroadcast(intentMessage)
                             try {
-                                mTaskNextBroadcast = System.currentTimeMillis() + (1000 / (ConfigSettings.DISPLAY_RATE.toInt())).toLong()
+                                mTaskNextBroadcast =
+                                    System.currentTimeMillis() + (1000 / (ConfigSettings.DISPLAY_RATE.toInt())).toLong()
                             } catch (e: Exception) {
                                 mTaskNextBroadcast = System.currentTimeMillis() + 100
                                 DebugLog.d(TAG, "Invalid display rate")
@@ -990,7 +1101,10 @@ class BTService: Service() {
                         }
                     }
                 }
-            } ?: if(UDSLogger.processPacket(mTaskTick, buff, applicationContext) != UDSReturn.OK) {
+            } ?: if (UDSLogger.processPacket(mTaskTick, buff, applicationContext) != UDSReturn.OK) {
+                DebugLog.w(TAG, "Logging timeout.")
+                setTaskState(UDSTask.NONE)
+            } else {
                 DebugLog.w(TAG, "Logging timeout.")
                 setTaskState(UDSTask.NONE)
             }
@@ -998,7 +1112,7 @@ class BTService: Service() {
 
         private fun processPacketFlashing(buff: ByteArray?) {
 
-            if(buff != null) {
+            if (buff != null) {
                 val response = buff.copyOfRange(8, buff.size)
 
                 val flashStatus = UDSFlasher.processFlashCAL(mTaskTick, response)
@@ -1015,7 +1129,7 @@ class BTService: Service() {
 
                 val progress = UDSFlasher.getProgress()
 
-                if(progress > 0){
+                if (progress > 0) {
                     DebugLog.d(TAG, "Total Progress: $progress")
 
                     val intentMessage = Intent(GUIMessage.FLASH_PROGRESS_SHOW.toString())
@@ -1025,8 +1139,7 @@ class BTService: Service() {
                     val intentMessage2 = Intent(GUIMessage.FLASH_PROGRESS.toString())
                     intentMessage2.putExtra(GUIMessage.FLASH_PROGRESS.toString(), progress)
                     sendBroadcast(intentMessage2)
-                }
-                else{
+                } else {
                     val intentMessage = Intent(GUIMessage.FLASH_PROGRESS_SHOW.toString())
                     intentMessage.putExtra(GUIMessage.FLASH_PROGRESS_SHOW.toString(), false)
                     sendBroadcast(intentMessage)
@@ -1038,30 +1151,35 @@ class BTService: Service() {
                         val intentMessage = Intent(GUIMessage.FLASH_CONFIRM.toString())
                         sendBroadcast(intentMessage)
                     }
+
                     UDSReturn.OK -> {
                         val intentMessage = Intent(GUIMessage.FLASH_BUTTON_RESET.toString())
                         sendBroadcast(intentMessage)
                     }
+
                     UDSReturn.ABORTED -> {
                         val intentMessage = Intent(GUIMessage.FLASH_BUTTON_RESET.toString())
                         sendBroadcast(intentMessage)
                     }
+
                     UDSReturn.FLASH_COMPLETE -> {
 
                     }
+
                     UDSReturn.CLEAR_DTC_REQUEST -> {
 
-                            //Send clear request
-                            val bleHeader = BLEHeader()
-                            bleHeader.rxID = 0x7E8
-                            bleHeader.txID = 0x700
-                            bleHeader.cmdSize = 1
-                            bleHeader.cmdFlags = BLECommandFlags.PER_CLEAR.value
-                            val dataBytes = byteArrayOf(0x04.toByte())
-                            val buf = bleHeader.toByteArray() + dataBytes
-                            mWriteQueue.add(buf)
+                        //Send clear request
+                        val bleHeader = BLEHeader()
+                        bleHeader.rxID = 0x7E8
+                        bleHeader.txID = 0x700
+                        bleHeader.cmdSize = 1
+                        bleHeader.cmdFlags = BLECommandFlags.PER_CLEAR.value
+                        val dataBytes = byteArrayOf(0x04.toByte())
+                        val buf = bleHeader.toByteArray() + dataBytes
+                        mWriteQueue.add(buf)
 
                     }
+
                     UDSReturn.COMMAND_QUEUED -> {
                         var queuedCommand = buildBLEFrame(UDSFlasher.getCommand())
                         //DebugLog.d(TAG,"UDSFlash, built BLE frame: " + queuedCommand.toHex())
@@ -1069,17 +1187,16 @@ class BTService: Service() {
                         writePacket(queuedCommand)
 
                     }
+
                     else -> {
                         DebugLog.d(TAG, "Received ${flashStatus} from UDSFlash")
                         setTaskState(UDSTask.NONE)
                     }
                 }
-            }
-            else{
-                if(UDSFlasher.getSubtask() == FLASH_ECU_CAL_SUBTASK.FLASH_BLOCK || UDSFlasher.getSubtask() == FLASH_ECU_CAL_SUBTASK.PATCH_BLOCK){
+            } else {
+                if (UDSFlasher.getSubtask() == FLASH_ECU_CAL_SUBTASK.FLASH_BLOCK || UDSFlasher.getSubtask() == FLASH_ECU_CAL_SUBTASK.PATCH_BLOCK) {
                     //Do NOTHING
-                }
-                else {
+                } else {
                     DebugLog.d(TAG, "Sending tester present.... Flasher is idle")
                     mWriteQueue.add(buildBLEFrame(UDS_COMMAND.TESTER_PRESENT.bytes))
                 }
@@ -1101,7 +1218,10 @@ class BTService: Service() {
                 } else {
                     setTaskState(UDSTask.NONE)
                 }
-            }?: if(UDSInfo.processPacket(mTaskTick, buff) != UDSReturn.OK) {
+            } ?: if (UDSInfo.processPacket(mTaskTick, buff) != UDSReturn.OK) {
+                DebugLog.w(TAG, "GetInfo timeout.")
+                setTaskState(UDSTask.NONE)
+            } else {
                 DebugLog.w(TAG, "GetInfo timeout.")
                 setTaskState(UDSTask.NONE)
             }
@@ -1122,7 +1242,10 @@ class BTService: Service() {
                 } else {
                     setTaskState(UDSTask.NONE)
                 }
-            }?: if(UDSInfo.processPacket(mTaskTick, buff) != UDSReturn.OK) {
+            } ?: if (UDSInfo.processPacket(mTaskTick, buff) != UDSReturn.OK) {
+                DebugLog.w(TAG, "GetInfo timeout.")
+                setTaskState(UDSTask.NONE)
+            } else {
                 DebugLog.w(TAG, "GetInfo timeout.")
                 setTaskState(UDSTask.NONE)
             }
@@ -1137,6 +1260,7 @@ class BTService: Service() {
                             writePacket(UDSdtc.startTask(mTaskTick + 1, false))
                         }
                     }
+
                     UDSReturn.COMPLETE -> {
                         val intentMessage = Intent(GUIMessage.UTILITY_INFO.toString())
                         intentMessage.putExtra(GUIMessage.UTILITY_INFO.toString(), UDSdtc.getInfo())
@@ -1144,6 +1268,7 @@ class BTService: Service() {
 
                         setTaskState(UDSTask.NONE)
                     }
+
                     else -> {
                         val intentMessage = Intent(GUIMessage.UTILITY_INFO.toString())
                         intentMessage.putExtra(GUIMessage.UTILITY_INFO.toString(), UDSdtc.getInfo())
@@ -1152,7 +1277,10 @@ class BTService: Service() {
                         setTaskState(UDSTask.NONE)
                     }
                 }
-            }?: if(UDSdtc.processPacket(mTaskTick, buff, false) != UDSReturn.OK) {
+            } ?: if (UDSdtc.processPacket(mTaskTick, buff, false) != UDSReturn.OK) {
+                DebugLog.w(TAG, "GetDTC timeout.")
+                setTaskState(UDSTask.NONE)
+            } else {
                 DebugLog.w(TAG, "GetDTC timeout.")
                 setTaskState(UDSTask.NONE)
             }
@@ -1173,7 +1301,10 @@ class BTService: Service() {
                 } else {
                     setTaskState(UDSTask.NONE)
                 }
-            }?: if(UDSdtc.processPacket(mTaskTick, buff, true) != UDSReturn.OK) {
+            } ?: if (UDSdtc.processPacket(mTaskTick, buff, true) != UDSReturn.OK) {
+                DebugLog.w(TAG, "ClearDTC timeout.")
+                setTaskState(UDSTask.NONE)
+            } else {
                 DebugLog.w(TAG, "ClearDTC timeout.")
                 setTaskState(UDSTask.NONE)
             }
@@ -1198,7 +1329,8 @@ class BTService: Service() {
             val bleHeader = BLEHeader()
             bleHeader.cmdSize = 2
             bleHeader.cmdFlags = BLECommandFlags.SETTINGS.value or BLESettings.PERSIST_DELAY.value
-            val dataBytes = byteArrayOf((delay and 0xFF).toByte(), ((delay and 0xFF00) shr 8).toByte())
+            val dataBytes =
+                byteArrayOf((delay and 0xFF).toByte(), ((delay and 0xFF00) shr 8).toByte())
             val buff = bleHeader.toByteArray() + dataBytes
             writePacket(buff)
         }
@@ -1208,7 +1340,8 @@ class BTService: Service() {
             val bleHeader = BLEHeader()
             bleHeader.cmdSize = 2
             bleHeader.cmdFlags = BLECommandFlags.SETTINGS.value or BLESettings.PERSIST_Q_DELAY.value
-            val dataBytes = byteArrayOf((delay and 0xFF).toByte(), ((delay and 0xFF00) shr 8).toByte())
+            val dataBytes =
+                byteArrayOf((delay and 0xFF).toByte(), ((delay and 0xFF00) shr 8).toByte())
             val buff = bleHeader.toByteArray() + dataBytes
             writePacket(buff)
         }
@@ -1218,7 +1351,12 @@ class BTService: Service() {
             val bleHeader = BLEHeader()
             bleHeader.cmdSize = 4
             bleHeader.cmdFlags = BLECommandFlags.SETTINGS.value or BLESettings.LED_COLOR.value
-            val dataBytes = byteArrayOf((b and 0xFF).toByte(), (r and 0xFF).toByte(), (g and 0xFF).toByte(), 0x00.toByte())
+            val dataBytes = byteArrayOf(
+                (b and 0xFF).toByte(),
+                (r and 0xFF).toByte(),
+                (g and 0xFF).toByte(),
+                0x00.toByte()
+            )
             val buff = bleHeader.toByteArray() + dataBytes
             writePacket(buff)
         }
@@ -1228,11 +1366,14 @@ class BTService: Service() {
             val bleHeader = BLEHeader()
             bleHeader.cmdSize = 2
             bleHeader.cmdFlags = BLECommandFlags.SETTINGS.value or BLESettings.ISOTP_STMIN.value
-            val buff = bleHeader.toByteArray() + byteArrayOf((amount shr 0).toByte(), (amount shr 8).toByte())
+            val buff = bleHeader.toByteArray() + byteArrayOf(
+                (amount shr 0).toByte(),
+                (amount shr 8).toByte()
+            )
             writePacket(buff)
         }
 
-        private fun buildBLEFrame(udsCommand: ByteArray): ByteArray{
+        private fun buildBLEFrame(udsCommand: ByteArray): ByteArray {
             val bleHeader = BLEHeader()
             bleHeader.cmdSize = udsCommand.size
             bleHeader.cmdFlags = BLECommandFlags.PER_CLEAR.value
@@ -1253,7 +1394,8 @@ class BTService: Service() {
             //send password
             val bleHeader = BLEHeader()
             bleHeader.cmdSize = password.length
-            bleHeader.cmdFlags = BLECommandFlags.SETTINGS.value or BLECommandFlags.SET_GET.value or BLESettings.PASSWORD.value
+            bleHeader.cmdFlags =
+                BLECommandFlags.SETTINGS.value or BLECommandFlags.SET_GET.value or BLESettings.PASSWORD.value
             val buff = bleHeader.toByteArray() + password.toByteArray()
             writePacket(buff)
         }

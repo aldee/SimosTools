@@ -1,13 +1,23 @@
 package com.app.simostools
 
 import android.content.Context
-import java.io.*
+import java.io.BufferedReader
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.InputStream
+import java.io.InputStreamReader
 import java.lang.Long.parseLong
 
 object PIDCSVFile {
     private val TAG = "PIDCSVFile"
 
-    fun read(fileName: String?, context: Context?, addressMin: Long, addressMax: Long):Array<PIDStruct?>? {
+    fun read(
+        fileName: String?,
+        context: Context?,
+        addressMin: Long,
+        addressMax: Long
+    ): Array<PIDStruct?>? {
         context?.let {
             DebugLog.i(TAG, "reading $fileName.")
 
@@ -25,12 +35,16 @@ object PIDCSVFile {
         return null
     }
 
-    fun readStream(fileStream: InputStream?, addressMin: Long, addressMax: Long):Array<PIDStruct?>? {
+    fun readStream(
+        fileStream: InputStream?,
+        addressMin: Long,
+        addressMax: Long
+    ): Array<PIDStruct?>? {
         //get stream
         val inStream = BufferedReader(InputStreamReader(fileStream))
 
         //is the file empty?
-        if(!inStream.ready()) {
+        if (!inStream.ready()) {
             //close file and return
             inStream.close()
             DebugLog.i(TAG, "file is empty.")
@@ -39,7 +53,7 @@ object PIDCSVFile {
 
         //check header
         val cfgLine = inStream.readLine()
-        if(cfgLine == CSVItems.values()[0].getHeader() + "\n") {
+        if (cfgLine == CSVItems.values()[0].getHeader() + "\n") {
             //close file and return
             inStream.close()
             DebugLog.i(TAG, "config line does not match")
@@ -49,12 +63,14 @@ object PIDCSVFile {
         //read PIDS
         var i = 0
         var pidList: Array<PIDStruct?>? = null
-        while(inStream.ready() && i < MAX_PIDS) {
+        while (inStream.ready() && i < MAX_PIDS) {
             var pidString = inStream.readLine()
             val pidStrings: Array<String?> = arrayOfNulls(CSVItems.values().count())
 
             var d = 0
-            while(d < CSVItems.values().count()-1 && pidString != pidString.substringBefore(",")) {
+            while (d < CSVItems.values()
+                    .count() - 1 && pidString != pidString.substringBefore(",")
+            ) {
                 pidStrings[d] = pidString.substringBefore(",")
                 pidString = pidString.substringAfter(",")
                 DebugLog.d(TAG, "PID $i,$d: ${pidStrings[d]}")
@@ -64,24 +80,26 @@ object PIDCSVFile {
             DebugLog.d(TAG, "PID $i,$d: ${pidStrings[d]}")
             d++
 
-            if(d == CSVItems.values().count()) {
+            if (d == CSVItems.values().count()) {
                 try {
                     //make room
-                    pidList = pidList?.copyOf(i+1) ?: arrayOfNulls(1)
+                    pidList = pidList?.copyOf(i + 1) ?: arrayOfNulls(1)
 
                     //make sure the length is legal
-                    if(pidStrings[CSVItems.LENGTH.ordinal]!!.toInt() != 1 && pidStrings[CSVItems.LENGTH.ordinal]!!.toInt() != 2 && pidStrings[CSVItems.LENGTH.ordinal]!!.toInt() != 4)
+                    if (pidStrings[CSVItems.LENGTH.ordinal]!!.toInt() != 1 && pidStrings[CSVItems.LENGTH.ordinal]!!.toInt() != 2 && pidStrings[CSVItems.LENGTH.ordinal]!!.toInt() != 4)
                         throw RuntimeException("Unexpected pid length: ${pidStrings[CSVItems.LENGTH.ordinal]!!}")
 
                     //convert address and error check
-                    val l = parseLong(pidStrings[CSVItems.ADDRESS.ordinal]!!.substringAfter("0x"), 16)
-                    if(l < addressMin)
+                    val l =
+                        parseLong(pidStrings[CSVItems.ADDRESS.ordinal]!!.substringAfter("0x"), 16)
+                    if (l < addressMin)
                         throw Exception("Unexpected address 0x${l.toHex()}, min address 0x${addressMin.toHex()}")
-                    if(l > addressMax)
+                    if (l > addressMax)
                         throw Exception("Unexpected address 0x${l.toHex()}, max address 0x${addressMax.toHex()}")
 
                     //Build pid
-                    pidList[i++] = PIDStruct(l,
+                    pidList[i++] = PIDStruct(
+                        l,
                         pidStrings[CSVItems.LENGTH.ordinal]!!.toInt(),
                         pidStrings[CSVItems.SIGNED.ordinal]!!.toBoolean(),
                         pidStrings[CSVItems.PROG_MIN.ordinal]!!.toFloat(),
@@ -96,8 +114,9 @@ object PIDCSVFile {
                         pidStrings[CSVItems.UNIT.ordinal]!!,
                         pidStrings[CSVItems.ENABLED.ordinal]!!.toBoolean(),
                         pidStrings[CSVItems.TABS.ordinal]!!,
-                        pidStrings[CSVItems.ASSIGN_TO.ordinal]!!)
-                } catch(e: Exception) {
+                        pidStrings[CSVItems.ASSIGN_TO.ordinal]!!
+                    )
+                } catch (e: Exception) {
                     //close file and return
                     inStream.close()
                     DebugLog.e(TAG, "unable to create PIDStructure ${pidList?.count()}", e)
@@ -118,7 +137,12 @@ object PIDCSVFile {
         return pidList
     }
 
-    fun write(fileName: String?, context: Context?, pidList: Array<PIDStruct?>?, overWrite: Boolean): Boolean {
+    fun write(
+        fileName: String?,
+        context: Context?,
+        pidList: Array<PIDStruct?>?,
+        overWrite: Boolean
+    ): Boolean {
         pidList?.let { list ->
             context?.let {
                 DebugLog.i(TAG, "writing $fileName.")
@@ -165,7 +189,7 @@ object PIDCSVFile {
                                     "${pid.assignTo}"
 
                             outStream.write((writeString + "\n").toByteArray())
-                        } catch(e: Exception) {
+                        } catch (e: Exception) {
                             //close file and return
                             outStream.close()
                             DebugLog.e(TAG, "unable to write PID", e)

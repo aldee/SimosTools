@@ -1,10 +1,9 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/layoutSettingsCar"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".SettingsCarFragment"
-    android:id="@+id/layoutSettingsCar">
+    tools:context=".SettingsCarFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -27,9 +26,9 @@
 
         <SeekBar
             android:id="@+id/seekBarCurbWeight"
-            android:contentDescription="@string/textview_settings_curb_weight"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/textview_settings_curb_weight" />
 
         <TextView
             android:id="@+id/textViewTireDiameter"
@@ -41,9 +40,9 @@
 
         <SeekBar
             android:id="@+id/seekBarTireDiameter"
-            android:contentDescription="@string/textview_settings_tire_diameter"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/textview_settings_tire_diameter" />
 
         <TextView
             android:id="@+id/textViewDragCoefficient"
@@ -55,9 +54,9 @@
 
         <SeekBar
             android:id="@+id/seekBarDragCoefficient"
-            android:contentDescription="@string/textview_settings_drag_coefficient"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/textview_settings_drag_coefficient" />
 
         <View
             android:id="@+id/divider2"
@@ -80,8 +79,8 @@
 
             <EditText
                 android:id="@+id/editTextGear1"
-                android:layout_height="match_parent"
                 android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:inputType="text"
                 android:text=""
                 android:textSize="24sp" />
@@ -103,8 +102,8 @@
 
             <EditText
                 android:id="@+id/editTextGear2"
-                android:layout_height="match_parent"
                 android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:inputType="text"
                 android:text=""
                 android:textSize="24sp" />
@@ -126,8 +125,8 @@
 
             <EditText
                 android:id="@+id/editTextGear3"
-                android:layout_height="match_parent"
                 android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:inputType="text"
                 android:text=""
                 android:textSize="24sp" />
@@ -149,8 +148,8 @@
 
             <EditText
                 android:id="@+id/editTextGear4"
-                android:layout_height="match_parent"
                 android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:inputType="text"
                 android:text=""
                 android:textSize="24sp" />
@@ -172,8 +171,8 @@
 
             <EditText
                 android:id="@+id/editTextGear5"
-                android:layout_height="match_parent"
                 android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:inputType="text"
                 android:text=""
                 android:textSize="24sp" />
@@ -195,8 +194,8 @@
 
             <EditText
                 android:id="@+id/editTextGear6"
-                android:layout_height="match_parent"
                 android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:inputType="text"
                 android:text=""
                 android:textSize="24sp" />
@@ -218,8 +217,8 @@
 
             <EditText
                 android:id="@+id/editTextGear7"
-                android:layout_height="match_parent"
                 android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:inputType="text"
                 android:text=""
                 android:textSize="24sp" />
@@ -241,8 +240,8 @@
 
             <EditText
                 android:id="@+id/editTextGearFinal"
-                android:layout_height="match_parent"
                 android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:inputType="text"
                 android:text=""
                 android:textSize="24sp" />

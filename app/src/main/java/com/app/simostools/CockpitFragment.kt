@@ -13,7 +13,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
-import java.lang.Exception
 
 class CockpitViewModel : ViewModel() {
     var currentTask: UDSTask = UDSTask.NONE
@@ -21,12 +20,12 @@ class CockpitViewModel : ViewModel() {
 
 class CockpitFragment : Fragment() {
     private val TAG = "CockpitFragment"
-    private var mCockpitView: SwitchCockpit?    = null
-    private var mPIDVelocity                    = -1
-    private var mPIDRPM                         = -1
-    private var mPIDBoost                       = -1
-    private var mPIDAccelerationLatitude        = -1
-    private var mPIDAccelerationLongitude       = -1
+    private var mCockpitView: SwitchCockpit? = null
+    private var mPIDVelocity = -1
+    private var mPIDRPM = -1
+    private var mPIDBoost = -1
+    private var mPIDAccelerationLatitude = -1
+    private var mPIDAccelerationLongitude = -1
     private lateinit var mViewModel: CockpitViewModel
 
     override fun onCreateView(
@@ -62,16 +61,16 @@ class CockpitFragment : Fragment() {
                 list[i]?.let { pid ->
                     when (pid.address) {
                         0xf40C.toLong() -> mPIDRPM = i
-                        0xd0012400      -> mPIDRPM = i
+                        0xd0012400 -> mPIDRPM = i
 
                         0x2033.toLong() -> mPIDVelocity = i
-                        0xd00155b6      -> mPIDVelocity = i
+                        0xd00155b6 -> mPIDVelocity = i
 
                         0x39c0.toLong() -> mPIDBoost = i
-                        0xd00098cc      -> mPIDBoost = i
+                        0xd00098cc -> mPIDBoost = i
 
-                        0xd000ee2a      -> mPIDAccelerationLatitude = i
-                        0xd00141ba      -> mPIDAccelerationLongitude = i
+                        0xd000ee2a -> mPIDAccelerationLatitude = i
+                        0xd00141ba -> mPIDAccelerationLongitude = i
                     }
                 }
             }
@@ -121,28 +120,28 @@ class CockpitFragment : Fragment() {
 
     fun doUpdate(readCount: Int, readTime: Long) {
         //Clear stats are startup
-        if(readCount < 50) {
+        if (readCount < 50) {
             PIDs.resetData()
-            if(UDSLogger.getModeDSG())
+            if (UDSLogger.getModeDSG())
                 PIDs.resetData(true)
         }
 
         PIDs.getList()?.let { list ->
             mCockpitView?.apply {
-                if(mPIDAccelerationLatitude > -1)
-                    dataAccelerationLatitude = list[mPIDAccelerationLatitude]?.value?:0f
+                if (mPIDAccelerationLatitude > -1)
+                    dataAccelerationLatitude = list[mPIDAccelerationLatitude]?.value ?: 0f
 
-                if(mPIDAccelerationLongitude > -1)
-                    dataAccelerationLongitude = list[mPIDAccelerationLongitude]?.value?:0f
+                if (mPIDAccelerationLongitude > -1)
+                    dataAccelerationLongitude = list[mPIDAccelerationLongitude]?.value ?: 0f
 
-                if(mPIDVelocity > -1)
-                    dataVelocity = list[mPIDVelocity]?.value?:0f
+                if (mPIDVelocity > -1)
+                    dataVelocity = list[mPIDVelocity]?.value ?: 0f
 
-                if(mPIDBoost > -1)
-                    dataBoost = list[mPIDBoost]?.value?:0f
+                if (mPIDBoost > -1)
+                    dataBoost = list[mPIDBoost]?.value ?: 0f
 
-                if(mPIDRPM > -1)
-                    dataRPM = list[mPIDRPM]?.value?:0f
+                if (mPIDRPM > -1)
+                    dataRPM = list[mPIDRPM]?.value ?: 0f
 
                 doDraw()
             }
@@ -154,10 +153,12 @@ class CockpitFragment : Fragment() {
             when (intent.action) {
                 GUIMessage.STATE_TASK.toString() -> mViewModel.currentTask =
                     intent.getSerializableExtra(GUIMessage.STATE_TASK.toString()) as UDSTask
+
                 GUIMessage.STATE_CONNECTION.toString() -> {
                     mViewModel.currentTask = UDSTask.NONE
                     sendServiceMessage(BTServiceTask.DO_START_LOG.toString())
                 }
+
                 GUIMessage.READ_LOG.toString() -> {
                     val readCount = intent.getIntExtra("readCount", 0)
                     val readTime = intent.getLongExtra("readTime", 0)
@@ -171,7 +172,8 @@ class CockpitFragment : Fragment() {
                     //Update callback
                     doUpdate(readCount, readTime)
                 }
-                else -> { }
+
+                else -> {}
             }
         }
     }

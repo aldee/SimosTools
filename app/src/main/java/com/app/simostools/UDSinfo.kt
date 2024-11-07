@@ -1,9 +1,9 @@
 package com.app.simostools
 
 object UDSInfo {
-    private var TAG                     = "UDSInfo"
-    private var mLastString: String     = ""
-    private var mTimeoutCounter: Int    = TIME_OUT_INFO
+    private var TAG = "UDSInfo"
+    private var mLastString: String = ""
+    private var mTimeoutCounter: Int = TIME_OUT_INFO
 
     fun getInfo(): String {
         return mLastString
@@ -26,7 +26,14 @@ object UDSInfo {
             resetTimeout()
 
             if (buff.count() >= 11 && buff[8] == 0x62.toByte()) {
-                mLastString = "${ECUInfo.values()[ticks].str}: ${ECUInfo.values()[ticks].parseResponse(buff.copyOfRange(11, buff.count()))}"
+                mLastString = "${ECUInfo.values()[ticks].str}: ${
+                    ECUInfo.values()[ticks].parseResponse(
+                        buff.copyOfRange(
+                            11,
+                            buff.count()
+                        )
+                    )
+                }"
 
                 return UDSReturn.OK
             }
@@ -37,7 +44,7 @@ object UDSInfo {
     }
 
     private fun addTimeout(): UDSReturn {
-        if(--mTimeoutCounter == 0) {
+        if (--mTimeoutCounter == 0) {
             return UDSReturn.ERROR_TIME_OUT
         }
 

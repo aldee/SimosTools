@@ -1,11 +1,11 @@
 package com.app.simostools
 
 import android.content.Context
-import android.widget.TextView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.TextView
 
 class SwitchArrayAdapter(context: Context, textViewResourceId: Int, list: Array<String>) :
     ArrayAdapter<String>(context, textViewResourceId) {
@@ -28,7 +28,7 @@ class SwitchArrayAdapter(context: Context, textViewResourceId: Int, list: Array<
     }
 
     override fun add(`object`: String?) {
-        items += `object`?:""
+        items += `object` ?: ""
 
         super.add(`object`)
     }

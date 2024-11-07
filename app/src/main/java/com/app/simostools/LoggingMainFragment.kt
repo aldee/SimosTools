@@ -4,12 +4,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Rect
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.startForegroundService
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModel
@@ -18,12 +18,6 @@ import androidx.navigation.fragment.findNavController
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
-import android.util.DisplayMetrics
-
-import android.view.Display
-
-import android.view.WindowManager
-import androidx.core.view.size
 
 class LoggingViewModel : ViewModel() {
     var currentTask: UDSTask = UDSTask.NONE
@@ -31,11 +25,11 @@ class LoggingViewModel : ViewModel() {
 
 class LoggingMainFragment : Fragment() {
     private val TAG = "LoggingMainFragment"
-    private var mTabLayout: TabLayout?                  = null
-    private var mViewPager: ViewPager2?                 = null
-    private var mViewAdapter: LoggingViewPagerAdapter?  = null
-    private var mLastEnabled                            = false
-    private var mPackCount: TextView?                   = null
+    private var mTabLayout: TabLayout? = null
+    private var mViewPager: ViewPager2? = null
+    private var mViewAdapter: LoggingViewPagerAdapter? = null
+    private var mLastEnabled = false
+    private var mPackCount: TextView? = null
     private lateinit var mViewModel: LoggingViewModel
 
     override fun onCreateView(
@@ -92,19 +86,19 @@ class LoggingMainFragment : Fragment() {
         mTabLayout = view.findViewById(R.id.tabLayoutLogging)
         mViewPager = view.findViewById(R.id.viewPagerLogging)
 
-        mTabLayout?.let { tabs->
+        mTabLayout?.let { tabs ->
             mViewPager?.let { pager ->
                 mViewAdapter = LoggingViewPagerAdapter(this)
                 mViewAdapter?.let { adapter ->
                     //Add tabs
-                    if(PIDs.getTabs().contains("Default"))
+                    if (PIDs.getTabs().contains("Default"))
                         adapter.add("Default")
                     PIDs.getTabs().toSortedMap().forEach {
-                        if(it.key != "" && it.key != "Default")
+                        if (it.key != "" && it.key != "Default")
                             adapter.add(it.key)
                     }
                     adapter.add("ECU")
-                    if(ConfigSettings.LOG_DSG.toBoolean())
+                    if (ConfigSettings.LOG_DSG.toBoolean())
                         adapter.add("DSG")
 
                     adapter.add("Cockpit")
@@ -141,7 +135,12 @@ class LoggingMainFragment : Fragment() {
         filter.addAction(GUIMessage.READ_LOG.toString())
         filter.addAction(GUIMessage.STATE_CONNECTION.toString())
         filter.addAction(GUIMessage.STATE_TASK.toString())
-        activity?.registerReceiver(mBroadcastReceiver, filter)
+        context?.let {
+            ContextCompat.registerReceiver(
+                it, mBroadcastReceiver, filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        }
 
         //Set background color
         mTabLayout?.setBackgroundColor(ColorList.BT_BG.value)
@@ -161,9 +160,9 @@ class LoggingMainFragment : Fragment() {
 
     fun doUpdate(readCount: Int, readTime: Long) {
         //Clear stats are startup
-        if(readCount < 50) {
+        if (readCount < 50) {
             PIDs.resetData()
-            if(UDSLogger.getModeDSG())
+            if (UDSLogger.getModeDSG())
                 PIDs.resetData(true)
         }
 
@@ -172,12 +171,12 @@ class LoggingMainFragment : Fragment() {
         mPackCount?.text = getString(R.string.textview_fps, "%03.1f".format(fps))
         if (UDSLogger.isEnabled()) {
             //Highlight packet count in red since we are logging
-            if(!mLastEnabled) {
+            if (!mLastEnabled) {
                 mPackCount?.setTextColor(ColorList.GAUGE_WARN.value)
             }
         } else {
             //Not logging set packet count to black
-            if(mLastEnabled) {
+            if (mLastEnabled) {
                 mPackCount?.setTextColor(ColorList.GAUGE_NORMAL.value)
             }
         }
@@ -197,10 +196,12 @@ class LoggingMainFragment : Fragment() {
             when (intent.action) {
                 GUIMessage.STATE_TASK.toString() -> mViewModel.currentTask =
                     intent.getSerializableExtra(GUIMessage.STATE_TASK.toString()) as UDSTask
+
                 GUIMessage.STATE_CONNECTION.toString() -> {
                     mViewModel.currentTask = UDSTask.NONE
                     sendServiceMessage(BTServiceTask.DO_START_LOG.toString())
                 }
+
                 GUIMessage.READ_LOG.toString() -> {
                     val readCount = intent.getIntExtra("readCount", 0)
                     val readTime = intent.getLongExtra("readTime", 0)
@@ -214,7 +215,8 @@ class LoggingMainFragment : Fragment() {
                     //Update callback
                     doUpdate(readCount, readTime)
                 }
-                else -> { }
+
+                else -> {}
             }
         }
     }
