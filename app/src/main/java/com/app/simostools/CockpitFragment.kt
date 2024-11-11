@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.startForegroundService
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModel
@@ -94,7 +95,12 @@ class CockpitFragment : Fragment() {
         filter.addAction(GUIMessage.READ_LOG.toString())
         filter.addAction(GUIMessage.STATE_CONNECTION.toString())
         filter.addAction(GUIMessage.STATE_TASK.toString())
-        activity?.registerReceiver(mBroadcastReceiver, filter)
+        context?.let {
+            ContextCompat.registerReceiver(
+                it, mBroadcastReceiver, filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        }
 
         DebugLog.d(TAG, "onResume")
     }

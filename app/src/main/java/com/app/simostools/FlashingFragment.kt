@@ -18,12 +18,16 @@ import android.widget.ListView
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.startForegroundService
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 var gFlashMsgList: Array<String>? = arrayOf()
 
@@ -53,6 +57,7 @@ class FlashingFragment : Fragment() {
                 } ?: Toast.makeText(activity, "Failed", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(activity, "Failed", Toast.LENGTH_SHORT).show()
+                doWriteMessage("User cancelled picking bin file")
             }
         }
 
@@ -100,7 +105,7 @@ class FlashingFragment : Fragment() {
             paintRim.color = ColorList.BT_RIM.value
             setTextColor(ColorList.BT_TEXT.value)
             setOnClickListener {
-                //clickFlash(true)
+                clickFlash(true)
             }
         }
 
@@ -157,7 +162,12 @@ class FlashingFragment : Fragment() {
         filter.addAction(GUIMessage.FLASH_PROGRESS_SHOW.toString())
         filter.addAction(GUIMessage.FLASH_CONFIRM.toString())
         filter.addAction(GUIMessage.FLASH_BUTTON_RESET.toString())
-        activity?.registerReceiver(mBroadcastReceiver, filter)
+        context?.let {
+            ContextCompat.registerReceiver(
+                it, mBroadcastReceiver, filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        }
     }
 
     override fun onPause() {
@@ -213,20 +223,30 @@ class FlashingFragment : Fragment() {
     }
 
     private fun clickFlash(full: Boolean) {
-        var flashString = if (full) "Flash Full\n---------------"
-        else "Flash CAL\n---------------"
+        var flashString = if (full) "Flash Full: "
+        else "Flash CAL: "
 
-        if (mViewModel.connectionState == BLEConnectionState.CONNECTED) {
-            mViewModel.flashFull = full
-            var chooseFile = Intent(Intent.ACTION_GET_CONTENT).apply {
-                addCategory(Intent.CATEGORY_OPENABLE)
-                type = "*/*"
-            }
-            chooseFile = Intent.createChooser(chooseFile, "Choose a Fullbin")
-            resultPickLauncher.launch(chooseFile)
-        } else {
-            flashString += "\nNot connected."
+//        if (mViewModel.connectionState == BLEConnectionState.CONNECTED) {
+//            mViewModel.flashFull = full
+//            var chooseFile = Intent(Intent.ACTION_GET_CONTENT).apply {
+//                addCategory(Intent.CATEGORY_OPENABLE)
+//                type = "*/*"
+//            }
+//            chooseFile = Intent.createChooser(chooseFile, "Choose a Fullbin")
+//            resultPickLauncher.launch(chooseFile)
+//        } else {
+//            flashString += "\nNot connected."
+//        }
+
+        flashString += "Picking bin file"
+
+        mViewModel.flashFull = full
+        var chooseFile = Intent(Intent.ACTION_GET_CONTENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
         }
+        chooseFile = Intent.createChooser(chooseFile, "Choose a Fullbin")
+        resultPickLauncher.launch(chooseFile)
 
         doWriteMessage(flashString)
     }
@@ -296,11 +316,17 @@ class FlashingFragment : Fragment() {
         val value = gFlashMsgList ?: arrayOf()
         gFlashMsgList = value + message
         mArrayAdapter?.let {
-            it.add(message)
+            it.add(getCurrentDateTime() + " " + message)
 
             val btMessage = view?.findViewById<ListView>(R.id.listViewMessage)
             btMessage?.setSelection(it.count - 1)
         }
+    }
+
+    private fun getCurrentDateTime(): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault())
+        val currentDateandTime: String = sdf.format(Date())
+        return currentDateandTime
     }
 
     private fun setColor() {

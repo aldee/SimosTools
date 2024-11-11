@@ -113,11 +113,11 @@ class BTService : Service() {
     private fun BluetoothGattCharacteristic.containsProperty(property: Int): Boolean =
         properties and property != 0
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
 
         if (!mFinished) {
-            when (intent.action) {
+            when (intent?.action) {
                 BTServiceTask.STOP_SERVICE.toString() -> doStopService(startId)
                 BTServiceTask.START_SERVICE.toString() -> doStartService()
                 BTServiceTask.REQ_STATUS.toString() -> sendStatus()

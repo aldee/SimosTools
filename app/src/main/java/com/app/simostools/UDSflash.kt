@@ -110,7 +110,7 @@ object UDSFlasher {
         if (inputBin.size < 500000) {
             mLastString = "Selected file too small..."
             return byteArrayOf()
-        } else if (inputBin.size > 500000 && inputBin.size < 4000000) {
+        } else if (inputBin.size in 500001..3999999) {
             //Read box code from ECU
             mTask = FLASH_ECU_CAL_SUBTASK.GET_ECU_BOX_CODE
 
