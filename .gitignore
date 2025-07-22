@@ -1,15 +1,57 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+gitignore
+# IDE files and directories
+.idea/
+.gradle/
 local.properties
+.DS_Store
+
+# Build files and directories
+build/
+captures/
+*.apk
+*.aab
+output.json
+
+# Keystore files (NEVER commit your keystore)
+*.jks
+*.keystore
+
+# Log files
+*.log
+
+# Android Studio Profiler files
+*.hprof
+*.snapshot
+
+# Google Services (if you're using a placeholder or a local debug version)
+# If you have a specific google-services.json for production that's checked in,
+# you might want to adjust this or ignore a specific debug version.
+# google-services.json
+
+# Local native build output
+obj/
+libs/
+!libs/armeabi-v7a/
+!libs/arm64-v8a/
+!libs/x86/
+!libs/x86_64/
+
+# Crashlytics files (if generated locally and not meant for commit)
+com_crashlytics_export_strings.xml
+
+# CMake temporary files
+cmake-build-*/
+
+# User-specific configuration files (if any)
+# .idea/workspace.xml - Covered by .idea/
+# .idea/libraries/ - Covered by .idea/
+
+# Sensitive or large files you don't want to track
+# secrets.properties
+# large_asset.mp4
+
+# Generated files from specific libraries (add as needed)
+# /app/src/main/generated/
+
+# If using Realm
+realm.management/
