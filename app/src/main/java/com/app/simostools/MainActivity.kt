@@ -116,7 +116,11 @@ class MainActivity : AppCompatActivity() {
         filter.addAction(GUIMessage.STATE_TASK.toString())
         filter.addAction(GUIMessage.WRITE_LOG.toString())
         filter.addAction(GUIMessage.TOAST.toString())
-        registerReceiver(mBroadcastReceiver, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(mBroadcastReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(mBroadcastReceiver, filter)
+        }
 
         DebugLog.d(TAG, "onResume")
     }
