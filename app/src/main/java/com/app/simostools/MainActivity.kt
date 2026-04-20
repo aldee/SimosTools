@@ -16,8 +16,16 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.NavController
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.navigateUp
+import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.navigation.ui.setupWithNavController
+import com.google.android.material.navigation.NavigationView
 import java.util.Timer
 import java.util.TimerTask
 
@@ -33,6 +41,8 @@ class MainActivity : AppCompatActivity() {
     private val TAG = "MainActivity"
     private var mAskingPermission = false
     lateinit var mViewModel: MainViewModel
+    private lateinit var appBarConfiguration: AppBarConfiguration
+    private lateinit var navController: NavController
 
     var resultBTLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -87,7 +97,49 @@ class MainActivity : AppCompatActivity() {
         }
 
         setContentView(R.layout.activity_main)
-        setSupportActionBar(findViewById(R.id.toolbar))
+        val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+
+        val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
+        val navView: NavigationView = findViewById(R.id.nav_view)
+        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        navController = navHostFragment.navController
+
+        appBarConfiguration = AppBarConfiguration(
+            setOf(
+                R.id.MainFragment, R.id.LoggingFragment, R.id.FlashingFragment,
+                R.id.LogViewerFragment, R.id.UtilitiesFragment, R.id.SettingsFragment
+            ), drawerLayout
+        )
+        setupActionBarWithNavController(navController, appBarConfiguration)
+        navView.setupWithNavController(navController)
+
+        navView.setNavigationItemSelectedListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.LoggingFragment -> {
+                    sendServiceMessage(BTServiceTask.DO_START_LOG.toString())
+                    navController.navigate(R.id.LoggingFragment)
+                }
+                R.id.LogViewerFragment -> {
+                    gLogViewerLoadLast = false
+                    navController.navigate(R.id.LogViewerFragment)
+                }
+                R.id.SettingsFragment -> {
+                    TempPIDS.reset(this)
+                    ColorSettings.resetColors()
+                    navController.navigate(R.id.SettingsFragment)
+                }
+                R.id.nav_exit -> {
+                    doExit()
+                }
+                else -> {
+                    navController.navigate(menuItem.itemId)
+                }
+            }
+            drawerLayout.closeDrawers()
+            true
+        }
+
         window.statusBarColor = ColorList.BT_BG.value
         window.navigationBarColor = ColorList.BT_BG.value
 
@@ -160,6 +212,43 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    override fun onSupportNavigateUp(): Boolean {
+        return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
+    }
+
+    private fun doExit() {
+        //Write pid default files
+        UDSLoggingMode.values().forEach { mode ->
+            //write current PID list
+            PIDCSVFile.write(
+                getString(R.string.filename_pid_csv, mode.cfgName),
+                this,
+                PIDs.getList(mode),
+                true
+            )
+        }
+
+        //write current PID list
+        PIDCSVFile.write(
+            getString(R.string.filename_pid_csv, "DSG"),
+            this,
+            PIDs.getDSGList(),
+            true
+        )
+
+        //clear globals
+        gLogViewerData = null
+        gUtilitiesMsgList = emptyArray()
+        gFlashMsgList = emptyArray()
+
+        //stop timer
+        stopGUITimer()
+
+        //Stop our BT Service
+        sendServiceMessage(BTServiceTask.STOP_SERVICE.toString())
+        finish()
     }
 
     private fun timerCallback() {
@@ -263,6 +352,7 @@ class MainActivity : AppCompatActivity() {
     private fun setActionBarColor(color: Int) {
         val colorDrawable = ColorDrawable(color)
         supportActionBar?.setBackgroundDrawable(colorDrawable)
+        window.statusBarColor = color
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {

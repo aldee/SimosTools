@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/MainFragment"
+            android:title="@string/nav_main" />
+        <item
+            android:id="@+id/LoggingFragment"
+            android:title="@string/button_logging" />
+        <item
+            android:id="@+id/FlashingFragment"
+            android:title="@string/button_flashing" />
+        <item
+            android:id="@+id/LogViewerFragment"
+            android:title="@string/button_log_viewer" />
+        <item
+            android:id="@+id/UtilitiesFragment"
+            android:title="@string/button_utilities" />
+        <item
+            android:id="@+id/SettingsFragment"
+            android:title="@string/button_settings" />
+    </group>
+    <item android:title="Other">
+        <menu>
+            <item
+                android:id="@+id/nav_exit"
+                android:title="@string/button_exit" />
+        </menu>
+    </item>
+</menu>
