@@ -1,6 +1,5 @@
 package com.app.simostools
 
-import com.app.simostools.core.utils.DebugLog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
