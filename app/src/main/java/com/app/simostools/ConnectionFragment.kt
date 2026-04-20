@@ -73,8 +73,6 @@ class ConnectionFragment : Fragment() {
         recycler.adapter = mAdapter
 
         val buttonScan = view.findViewById<Button>(R.id.buttonScan)
-        buttonScan.setTextColor(ColorList.BT_TEXT.value)
-        buttonScan.setBackgroundColor(ColorList.BT_BG.value)
         buttonScan.setOnClickListener {
             DebugLog.d(tag, "Scan button clicked")
             mDevices.clear()
@@ -83,8 +81,6 @@ class ConnectionFragment : Fragment() {
         }
 
         val buttonDisconnect = view.findViewById<Button>(R.id.buttonDisconnect)
-        buttonDisconnect.setTextColor(ColorList.BT_TEXT.value)
-        buttonDisconnect.setBackgroundColor(ColorList.BT_BG.value)
         buttonDisconnect.setOnClickListener {
             sendServiceMessage(BTServiceTask.DO_DISCONNECT.toString())
         }
