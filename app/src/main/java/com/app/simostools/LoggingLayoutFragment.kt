@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import android.text.Html
 import android.view.LayoutInflater
@@ -69,7 +70,11 @@ class LoggingBaseFragment: Fragment() {
 
         val filter = IntentFilter()
         filter.addAction(GUIMessage.READ_LOG.toString())
-        activity?.registerReceiver(mBroadcastReceiver, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            activity?.registerReceiver(mBroadcastReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            activity?.registerReceiver(mBroadcastReceiver, filter)
+        }
 
         //Do we keep the screen on?
         view?.keepScreenOn = ConfigSettings.KEEP_SCREEN_ON.toBoolean()

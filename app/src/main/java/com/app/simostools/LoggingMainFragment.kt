@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Rect
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -18,12 +18,6 @@ import androidx.navigation.fragment.findNavController
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
-import android.util.DisplayMetrics
-
-import android.view.Display
-
-import android.view.WindowManager
-import androidx.core.view.size
 
 class LoggingViewModel : ViewModel() {
     var currentTask: UDSTask = UDSTask.NONE
@@ -141,7 +135,11 @@ class LoggingMainFragment : Fragment() {
         filter.addAction(GUIMessage.READ_LOG.toString())
         filter.addAction(GUIMessage.STATE_CONNECTION.toString())
         filter.addAction(GUIMessage.STATE_TASK.toString())
-        activity?.registerReceiver(mBroadcastReceiver, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            activity?.registerReceiver(mBroadcastReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            activity?.registerReceiver(mBroadcastReceiver, filter)
+        }
 
         //Set background color
         mTabLayout?.setBackgroundColor(ColorList.BT_BG.value)

@@ -8,11 +8,8 @@ import android.graphics.Color
 import android.graphics.Rect
 import android.os.Build
 import android.os.Environment
-import android.util.DisplayMetrics
-import android.view.WindowManager
-import android.widget.Toast
 import androidx.annotation.RequiresApi
-import java.util.*
+import java.util.UUID
 
 // Message types sent from the BluetoothChatService Handler
 enum class GUIMessage {
@@ -89,6 +86,10 @@ enum class RequiredPermissions(val permission: String, val version: Int, val req
     COARSE_LOCATION(Manifest.permission.ACCESS_COARSE_LOCATION, 0, true, PackageManager.PERMISSION_DENIED),
     READ_STORAGE(Manifest.permission.READ_EXTERNAL_STORAGE, 0, false, PackageManager.PERMISSION_DENIED),
     WRITE_STORAGE(Manifest.permission.WRITE_EXTERNAL_STORAGE, 0, false, PackageManager.PERMISSION_DENIED),
+    READ_MEDIA_IMAGES(Manifest.permission.READ_MEDIA_IMAGES, Build.VERSION_CODES.TIRAMISU, false, PackageManager.PERMISSION_DENIED),
+    READ_MEDIA_VIDEO(Manifest.permission.READ_MEDIA_VIDEO, Build.VERSION_CODES.TIRAMISU, false, PackageManager.PERMISSION_DENIED),
+    READ_MEDIA_AUDIO(Manifest.permission.READ_MEDIA_AUDIO, Build.VERSION_CODES.TIRAMISU, false, PackageManager.PERMISSION_DENIED),
+    POST_NOTIFICATIONS(Manifest.permission.POST_NOTIFICATIONS, Build.VERSION_CODES.TIRAMISU, false, PackageManager.PERMISSION_DENIED),
 }
 
 //ISOTP bridge command flags

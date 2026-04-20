@@ -1,19 +1,32 @@
 package com.app.simostools
 
-import android.app.*
-import android.bluetooth.*
+import android.annotation.SuppressLint
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGatt.CONNECTION_PRIORITY_HIGH
+import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
+import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.ParcelUuid
-import java.util.*
+import java.util.Timer
+import java.util.TimerTask
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Semaphore
 
@@ -62,6 +75,7 @@ class BLEHeader {
     }
 }
 
+@SuppressLint("MissingPermission")
 class BTService: Service() {
     //constants
     val TAG = "BTService"
@@ -89,11 +103,11 @@ class BTService: Service() {
     private fun BluetoothGattCharacteristic.isNotifiable(): Boolean = containsProperty(BluetoothGattCharacteristic.PROPERTY_NOTIFY)
     private fun BluetoothGattCharacteristic.containsProperty(property: Int): Boolean = properties and property != 0
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
 
         if(!mFinished) {
-            when (intent.action) {
+            when (intent?.action) {
                 BTServiceTask.STOP_SERVICE.toString()       -> doStopService(startId)
                 BTServiceTask.START_SERVICE.toString()      -> doStartService()
                 BTServiceTask.REQ_STATUS.toString()         -> sendStatus()
@@ -448,7 +462,7 @@ class BTService: Service() {
             mScanningTimer = null
 
             DebugLog.i(TAG, "Stop Scanning.")
-            (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter.bluetoothLeScanner.stopScan(mScanCallback)
+            (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter?.bluetoothLeScanner?.stopScan(mScanCallback)
             mScanning = false
         }
     }
@@ -503,7 +517,11 @@ class BTService: Service() {
                 .build()
 
             // Notification ID cannot be 0.
-            startForeground(1, notification)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+            } else {
+                startForeground(1, notification)
+            }
         }
     }
 
@@ -537,7 +555,7 @@ class BTService: Service() {
 
         //Start scanning for BLE devices
         val settings = ScanSettings.Builder().build()
-        (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter.bluetoothLeScanner.startScan(filter, settings, mScanCallback)
+        (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter?.bluetoothLeScanner?.startScan(filter, settings, mScanCallback)
         mScanning = true
     }
 
@@ -990,9 +1008,11 @@ class BTService: Service() {
                         }
                     }
                 }
-            } ?: if(UDSLogger.processPacket(mTaskTick, buff, applicationContext) != UDSReturn.OK) {
-                DebugLog.w(TAG, "Logging timeout.")
-                setTaskState(UDSTask.NONE)
+            } ?: run {
+                if (UDSLogger.processPacket(mTaskTick, null, applicationContext) != UDSReturn.OK) {
+                    DebugLog.w(TAG, "Logging timeout.")
+                    setTaskState(UDSTask.NONE)
+                }
             }
         }
 
@@ -1101,9 +1121,11 @@ class BTService: Service() {
                 } else {
                     setTaskState(UDSTask.NONE)
                 }
-            }?: if(UDSInfo.processPacket(mTaskTick, buff) != UDSReturn.OK) {
-                DebugLog.w(TAG, "GetInfo timeout.")
-                setTaskState(UDSTask.NONE)
+            } ?: run {
+                if (UDSInfo.processPacket(mTaskTick, null) != UDSReturn.OK) {
+                    DebugLog.w(TAG, "GetInfo timeout.")
+                    setTaskState(UDSTask.NONE)
+                }
             }
         }
 
@@ -1122,9 +1144,11 @@ class BTService: Service() {
                 } else {
                     setTaskState(UDSTask.NONE)
                 }
-            }?: if(UDSInfo.processPacket(mTaskTick, buff) != UDSReturn.OK) {
-                DebugLog.w(TAG, "GetInfo timeout.")
-                setTaskState(UDSTask.NONE)
+            } ?: run {
+                if (UDSInfo.processPacket(mTaskTick, null) != UDSReturn.OK) {
+                    DebugLog.w(TAG, "GetInfo timeout.")
+                    setTaskState(UDSTask.NONE)
+                }
             }
         }
 
@@ -1152,9 +1176,11 @@ class BTService: Service() {
                         setTaskState(UDSTask.NONE)
                     }
                 }
-            }?: if(UDSdtc.processPacket(mTaskTick, buff, false) != UDSReturn.OK) {
-                DebugLog.w(TAG, "GetDTC timeout.")
-                setTaskState(UDSTask.NONE)
+            } ?: run {
+                if (UDSdtc.processPacket(mTaskTick, null, false) != UDSReturn.OK) {
+                    DebugLog.w(TAG, "GetDTC timeout.")
+                    setTaskState(UDSTask.NONE)
+                }
             }
         }
 
@@ -1173,9 +1199,11 @@ class BTService: Service() {
                 } else {
                     setTaskState(UDSTask.NONE)
                 }
-            }?: if(UDSdtc.processPacket(mTaskTick, buff, true) != UDSReturn.OK) {
-                DebugLog.w(TAG, "ClearDTC timeout.")
-                setTaskState(UDSTask.NONE)
+            } ?: run {
+                if (UDSdtc.processPacket(mTaskTick, null, true) != UDSReturn.OK) {
+                    DebugLog.w(TAG, "ClearDTC timeout.")
+                    setTaskState(UDSTask.NONE)
+                }
             }
         }
 

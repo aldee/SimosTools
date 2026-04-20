@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -95,7 +96,11 @@ class CockpitFragment : Fragment() {
         filter.addAction(GUIMessage.READ_LOG.toString())
         filter.addAction(GUIMessage.STATE_CONNECTION.toString())
         filter.addAction(GUIMessage.STATE_TASK.toString())
-        activity?.registerReceiver(mBroadcastReceiver, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            activity?.registerReceiver(mBroadcastReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            activity?.registerReceiver(mBroadcastReceiver, filter)
+        }
 
         DebugLog.d(TAG, "onResume")
     }

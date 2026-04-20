@@ -3,26 +3,23 @@ package com.app.simostools
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
-import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
-import android.content.IntentFilter
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.os.*
+import android.graphics.drawable.ColorDrawable
+import android.os.Build
+import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
-import android.graphics.drawable.ColorDrawable
 import androidx.lifecycle.ViewModelProvider
-import java.util.*
-import android.os.Environment
-
-import java.io.File
-
-import android.R.attr.name
+import java.util.Timer
+import java.util.TimerTask
 
 class MainViewModel : ViewModel() {
     var started: Boolean                    = false
@@ -116,7 +113,13 @@ class MainActivity : AppCompatActivity() {
         filter.addAction(GUIMessage.STATE_TASK.toString())
         filter.addAction(GUIMessage.WRITE_LOG.toString())
         filter.addAction(GUIMessage.TOAST.toString())
-        registerReceiver(mBroadcastReceiver, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            registerReceiver(mBroadcastReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(mBroadcastReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(mBroadcastReceiver, filter)
+        }
 
         DebugLog.d(TAG, "onResume")
     }

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -129,7 +130,11 @@ class UtilitiesFragment : Fragment() {
         filter.addAction(GUIMessage.UTILITY_PROGRESS.toString())
         filter.addAction(GUIMessage.UTILITY_PROGRESS_MAX.toString())
         filter.addAction(GUIMessage.UTILITY_PROGRESS_SHOW.toString())
-        activity?.registerReceiver(mBroadcastReceiver, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            activity?.registerReceiver(mBroadcastReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            activity?.registerReceiver(mBroadcastReceiver, filter)
+        }
     }
 
     override fun onPause() {

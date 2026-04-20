@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.LayoutInflater
@@ -150,7 +151,11 @@ class FlashingFragment : Fragment() {
         filter.addAction(GUIMessage.FLASH_PROGRESS_SHOW.toString())
         filter.addAction(GUIMessage.FLASH_CONFIRM.toString())
         filter.addAction(GUIMessage.FLASH_BUTTON_RESET.toString())
-        activity?.registerReceiver(mBroadcastReceiver, filter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            activity?.registerReceiver(mBroadcastReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            activity?.registerReceiver(mBroadcastReceiver, filter)
+        }
     }
 
     override fun onPause() {
