@@ -7,7 +7,7 @@ android {
     compileSdk 37
 
     defaultConfig {
-        applicationId "com.app.simostools"
+        applicationId "com.arnanto.simostools"
         minSdk 28
         targetSdk 37
         versionCode 16

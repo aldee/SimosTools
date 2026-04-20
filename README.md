@@ -1,4 +1,4 @@
-# Simos Tools
+# VAG Tools
 
 This project has moved and all new builds are now available at:<br />
 https://play.google.com/store/apps/details?id=com.app.simostools

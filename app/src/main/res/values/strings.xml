@@ -1,5 +1,5 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">Simos Tools</string>
+    <string name="app_name">VAG Tools</string>
     <!-- Strings used for nav -->
     <string name="nav_main">Main</string>
     <string name="nav_flashing">Flashing</string>

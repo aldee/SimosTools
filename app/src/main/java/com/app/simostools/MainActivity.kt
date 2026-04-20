@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity() {
 
     var resultBTLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            doConnect()
+            // Bluetooth enabled
         }
     }
 
@@ -88,9 +88,6 @@ class MainActivity : AppCompatActivity() {
 
             //get permissions
             getPermissions()
-
-            //start GUI timer
-            startGUITimer()
 
             //Save started
             mViewModel.started = true
@@ -147,9 +144,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        //stop timer
-        stopGUITimer()
-
         super.onDestroy()
 
         DebugLog.d(TAG, "onDestroy")
@@ -159,6 +153,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
 
         setStatus()
+        sendServiceMessage(BTServiceTask.REQ_STATUS.toString())
 
         val filter = IntentFilter()
         filter.addAction(GUIMessage.STATE_CONNECTION.toString())
@@ -243,26 +238,9 @@ class MainActivity : AppCompatActivity() {
         gUtilitiesMsgList = emptyArray()
         gFlashMsgList = emptyArray()
 
-        //stop timer
-        stopGUITimer()
-
         //Stop our BT Service
         sendServiceMessage(BTServiceTask.STOP_SERVICE.toString())
         finish()
-    }
-
-    private fun timerCallback() {
-        when(mViewModel.connectionState) {
-            BLEConnectionState.ERROR      -> doConnect()
-            BLEConnectionState.NONE       -> doConnect()
-            BLEConnectionState.CONNECTING -> { }
-            BLEConnectionState.CONNECTED  -> {
-                if(ConfigSettings.AUTO_LOG.toBoolean() && mViewModel.currentTask == UDSTask.NONE) {
-                    sendServiceMessage(BTServiceTask.DO_START_LOG.toString())
-                }
-            }
-        }
-        sendServiceMessage(BTServiceTask.REQ_STATUS.toString())
     }
 
     private fun sendServiceMessage(type: String) {
@@ -271,37 +249,6 @@ class MainActivity : AppCompatActivity() {
             serviceIntent.action = type
             startForegroundService(serviceIntent)
         }
-    }
-
-    private fun doConnect() {
-        //If we are already connecting abort
-        if(mViewModel.connectionState > BLEConnectionState.NONE)
-            return
-
-        //if BT is off ask to enable
-        if (!(getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter.isEnabled) {
-            val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            resultBTLauncher.launch(intent)
-            return
-        }
-
-        //check permissions
-        var havePermissions = true
-        RequiredPermissions.values().forEach {
-            if(it.required && it.result == PackageManager.PERMISSION_DENIED)
-                havePermissions = false
-        }
-
-        if(havePermissions) {
-            //Tell service to connect
-            sendServiceMessage(BTServiceTask.DO_CONNECT.toString())
-        } else {
-            checkNextPermission(0, true)
-        }
-    }
-
-    private fun doDisconnect() {
-        sendServiceMessage(BTServiceTask.DO_DISCONNECT.toString())
     }
 
     private fun setStatus() {
@@ -367,9 +314,7 @@ class MainActivity : AppCompatActivity() {
                 DebugLog.i(TAG, "Permission was denied and is required ${RequiredPermissions.values()[requestCode].permission}.")
                 checkNextPermission(requestCode)
             } else {
-                if (requestCode == RequiredPermissions.values().count() - 1) {
-                    doConnect()
-                } else {
+                if (requestCode < RequiredPermissions.values().count() - 1) {
                     checkNextPermission(requestCode + 1)
                 }
             }
@@ -416,29 +361,6 @@ class MainActivity : AppCompatActivity() {
             finish()
         }
 
-
-        if (checkNextPermission(0))
-            doConnect()
-    }
-
-    fun startGUITimer() {
-        if(mViewModel.guiTimer == null) {
-            // creating timer task, timer
-            mViewModel.guiTimer = Timer()
-
-            val task = object : TimerTask() {
-                override fun run() {
-                    timerCallback()
-                }
-            }
-            mViewModel.guiTimer?.scheduleAtFixedRate(task, 1000, 1000)
-        }
-    }
-
-    fun stopGUITimer() {
-        if(mViewModel.guiTimer != null) {
-            mViewModel.guiTimer?.cancel()
-            mViewModel.guiTimer = null
-        }
+        checkNextPermission(0)
     }
 }

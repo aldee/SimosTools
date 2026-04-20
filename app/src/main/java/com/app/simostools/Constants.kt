@@ -31,7 +31,8 @@ enum class GUIMessage {
     FLASH_PROGRESS_SHOW,
     FLASH_CONFIRM,
     FLASH_BUTTON_RESET,
-    PID_RELOAD
+    PID_RELOAD,
+    SCAN_RESULT
 }
 
 // Constants that indicate the current connection state
@@ -74,6 +75,9 @@ enum class BTServiceTask {
     DO_STOP_TASK,
     FLASH_CONFIRMED,
     FLASH_CANCELED,
+    START_SCAN,
+    STOP_SCAN,
+    CONNECT_TO_DEVICE,
 }
 
 //Intent constants

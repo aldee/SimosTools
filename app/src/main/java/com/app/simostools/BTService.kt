@@ -111,7 +111,15 @@ class BTService: Service() {
                 BTServiceTask.STOP_SERVICE.toString()       -> doStopService(startId)
                 BTServiceTask.START_SERVICE.toString()      -> doStartService()
                 BTServiceTask.REQ_STATUS.toString()         -> sendStatus()
-                BTServiceTask.DO_CONNECT.toString()         -> doConnect()
+                BTServiceTask.START_SCAN.toString()         -> doStartScan()
+                BTServiceTask.STOP_SCAN.toString()          -> stopScanning()
+                BTServiceTask.CONNECT_TO_DEVICE.toString()  -> {
+                    val address = intent.getStringExtra("deviceAddress")
+                    if (address != null) {
+                        val device = (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter.getRemoteDevice(address)
+                        doConnect(device)
+                    }
+                }
                 BTServiceTask.DO_DISCONNECT.toString()      -> doDisconnect()
                 BTServiceTask.DO_START_LOG.toString()       -> mConnectionThread?.setTaskState(UDSTask.LOGGING)
                 BTServiceTask.DO_START_FLASH.toString()     -> mConnectionThread?.setTaskState(UDSTask.FLASHING)
@@ -154,24 +162,27 @@ class BTService: Service() {
 
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             super.onScanResult(callbackType, result)
+            DebugLog.d(TAG, "onScanResult: ${result.device.address}")
             result.device?.let { device ->
-                val name = device.name?: ""
-                DebugLog.i(TAG, "Found BLE device $name")
+                val name = device.name ?: "Unknown"
+                DebugLog.i(TAG, "Found BLE device $name - ${device.address}")
 
-                if (mBluetoothDevice == null && name.contentEquals(ConfigSettings.ADAPTER_NAME.value.toString())) {
-                    mBluetoothDevice = device
-
-                    stopScanning()
-
-                    DebugLog.i(TAG, "Initiating connection to $name")
-                    device.connectGatt(applicationContext, false, mGattCallback, 2)
-                }
+                val intentMessage = Intent(GUIMessage.SCAN_RESULT.toString())
+                intentMessage.setPackage(packageName)
+                intentMessage.putExtra("deviceName", name)
+                intentMessage.putExtra("deviceAddress", device.address)
+                sendBroadcast(intentMessage)
             }
+        }
+
+        override fun onBatchScanResults(results: MutableList<ScanResult>?) {
+            super.onBatchScanResults(results)
+            DebugLog.d(TAG, "onBatchScanResults: ${results?.size}")
         }
 
         override fun onScanFailed(errorCode: Int) {
             super.onScanFailed(errorCode)
-            DebugLog.w(TAG, "onScanFailed: code $errorCode")
+            DebugLog.e(TAG, "onScanFailed: code $errorCode", Exception("BLE Scan Failed"))
         }
     }
 
@@ -526,37 +537,49 @@ class BTService: Service() {
     }
 
     @Synchronized
-    private fun doConnect() {
-        doDisconnect()
+    private fun doStartScan() {
+        stopScanning()
+        DebugLog.i(TAG, "Starting BLE scan.")
 
-        DebugLog.i(TAG, "Searching for BLE device.")
-
-        val filter = listOf(
-            ScanFilter.Builder().setServiceUuid(ParcelUuid.fromString(BLE_SERVICE_UUID.toString()))
-                .build()
-        )
-
-        //Disable current scan timer
-        mScanningTimer?.cancel()
-        mScanningTimer?.purge()
-        mScanningTimer = null
-
-        //start scanning timer
         mScanningTimer = Timer()
         val task = object : TimerTask() {
             override fun run() {
-                doTimeout()
+                stopScanning()
             }
         }
         mScanningTimer?.schedule(task, BLE_SCAN_PERIOD)
 
-        //Set new connection status
-        setConnectionState(BLEConnectionState.CONNECTING)
+        val settings = ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+            .build()
+        
+        try {
+            val scanner = (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter?.bluetoothLeScanner
+            if (scanner != null) {
+                scanner.startScan(null, settings, mScanCallback)
+                mScanning = true
+            } else {
+                DebugLog.w(TAG, "BluetoothLeScanner is null")
+            }
+        } catch (e: Exception) {
+            DebugLog.e(TAG, "Exception starting scan", e)
+        }
+    }
 
-        //Start scanning for BLE devices
-        val settings = ScanSettings.Builder().build()
-        (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter?.bluetoothLeScanner?.startScan(filter, settings, mScanCallback)
-        mScanning = true
+    @Synchronized
+    private fun doConnect(device: BluetoothDevice? = null) {
+        doDisconnect()
+
+        if (device != null) {
+            mBluetoothDevice = device
+            DebugLog.i(TAG, "Connecting to ${device.name} - ${device.address}")
+            setConnectionState(BLEConnectionState.CONNECTING)
+            device.connectGatt(applicationContext, false, mGattCallback, 2)
+            return
+        }
+
+        DebugLog.w(TAG, "doConnect called with null device. Automatic discovery is disabled.")
+        setConnectionState(BLEConnectionState.NONE)
     }
 
     @Synchronized
@@ -627,6 +650,7 @@ class BTService: Service() {
         mConnectionState.errorMessage = newState.errorMessage
         mConnectionState.deviceName = mBluetoothGatt?.device?.name ?: ""
         val intentMessage = Intent(GUIMessage.STATE_CONNECTION.toString())
+        intentMessage.setPackage(packageName)
         intentMessage.putExtra(GUIMessage.STATE_CONNECTION.toString(), mConnectionState)
         sendBroadcast(intentMessage)
     }
@@ -637,6 +661,7 @@ class BTService: Service() {
             mConnectionThread?.sendTaskState()
         } else {
             val intentMessage = Intent(GUIMessage.STATE_CONNECTION.toString())
+            intentMessage.setPackage(packageName)
             intentMessage.putExtra(GUIMessage.STATE_CONNECTION.toString(), mConnectionState)
             sendBroadcast(intentMessage)
         }
@@ -761,10 +786,12 @@ class BTService: Service() {
         fun sendTaskState() {
             if(mTask == UDSTask.LOGGING && UDSLogger.isEnabled()) {
                 val intentMessage = Intent(GUIMessage.WRITE_LOG.toString())
+                intentMessage.setPackage(packageName)
                 intentMessage.putExtra(GUIMessage.WRITE_LOG.toString(), UDSLogger.isEnabled())
                 sendBroadcast(intentMessage)
             } else {
                 val intentMessage = Intent(GUIMessage.STATE_TASK.toString())
+                intentMessage.setPackage(packageName)
                 intentMessage.putExtra(GUIMessage.STATE_TASK.toString(), mTask)
                 sendBroadcast(intentMessage)
             }
@@ -944,6 +971,7 @@ class BTService: Service() {
                 if(buff.count() > 8) {
                     //Broadcast a new message
                     val intentMessage = Intent(GUIMessage.READ.toString())
+                    intentMessage.setPackage(packageName)
                     intentMessage.putExtra(
                         GUIMessage.READ.toString(),
                         buff.copyOfRange(8, buff.size)
@@ -975,6 +1003,7 @@ class BTService: Service() {
                         //Broadcast new PID data
                         if (System.currentTimeMillis() > mTaskNextBroadcast) {
                             val intentMessage = Intent(GUIMessage.READ_LOG.toString())
+                            intentMessage.setPackage(packageName)
                             intentMessage.putExtra("readCount", mTaskTick)
                             intentMessage.putExtra("readTime", System.currentTimeMillis() - mTaskTime)
                             intentMessage.putExtra("readResult", result)
@@ -991,6 +1020,7 @@ class BTService: Service() {
                         if (UDSLogger.isEnabled() != mLogWriteState) {
                             //Broadcast new message
                             val intentMessage = Intent(GUIMessage.WRITE_LOG.toString())
+                            intentMessage.setPackage(packageName)
                             intentMessage.putExtra(
                                 GUIMessage.WRITE_LOG.toString(),
                                 UDSLogger.isEnabled()
@@ -1029,6 +1059,7 @@ class BTService: Service() {
                         "Received status message from UDSFlash: ${UDSFlasher.getInfo()}"
                     )
                     val intentMessage = Intent(GUIMessage.FLASH_INFO.toString())
+                    intentMessage.setPackage(packageName)
                     intentMessage.putExtra(GUIMessage.FLASH_INFO.toString(), UDSFlasher.getInfo())
                     sendBroadcast(intentMessage)
                 }
@@ -1039,15 +1070,18 @@ class BTService: Service() {
                     DebugLog.d(TAG, "Total Progress: $progress")
 
                     val intentMessage = Intent(GUIMessage.FLASH_PROGRESS_SHOW.toString())
+                    intentMessage.setPackage(packageName)
                     intentMessage.putExtra(GUIMessage.FLASH_PROGRESS_SHOW.toString(), true)
                     sendBroadcast(intentMessage)
 
                     val intentMessage2 = Intent(GUIMessage.FLASH_PROGRESS.toString())
+                    intentMessage2.setPackage(packageName)
                     intentMessage2.putExtra(GUIMessage.FLASH_PROGRESS.toString(), progress)
                     sendBroadcast(intentMessage2)
                 }
                 else{
                     val intentMessage = Intent(GUIMessage.FLASH_PROGRESS_SHOW.toString())
+                    intentMessage.setPackage(packageName)
                     intentMessage.putExtra(GUIMessage.FLASH_PROGRESS_SHOW.toString(), false)
                     sendBroadcast(intentMessage)
                 }
@@ -1056,14 +1090,17 @@ class BTService: Service() {
                 when (flashStatus) {
                     UDSReturn.FLASH_CONFIRM -> {
                         val intentMessage = Intent(GUIMessage.FLASH_CONFIRM.toString())
+                        intentMessage.setPackage(packageName)
                         sendBroadcast(intentMessage)
                     }
                     UDSReturn.OK -> {
                         val intentMessage = Intent(GUIMessage.FLASH_BUTTON_RESET.toString())
+                        intentMessage.setPackage(packageName)
                         sendBroadcast(intentMessage)
                     }
                     UDSReturn.ABORTED -> {
                         val intentMessage = Intent(GUIMessage.FLASH_BUTTON_RESET.toString())
+                        intentMessage.setPackage(packageName)
                         sendBroadcast(intentMessage)
                     }
                     UDSReturn.FLASH_COMPLETE -> {
@@ -1110,6 +1147,7 @@ class BTService: Service() {
             buff?.let {
                 if (UDSInfo.processPacket(mTaskTick, buff) == UDSReturn.OK) {
                     val intentMessage = Intent(GUIMessage.UTILITY_INFO.toString())
+                    intentMessage.setPackage(packageName)
                     intentMessage.putExtra(GUIMessage.UTILITY_INFO.toString(), UDSInfo.getInfo())
                     sendBroadcast(intentMessage)
 
@@ -1133,6 +1171,7 @@ class BTService: Service() {
             buff?.let {
                 if (UDSInfo.processPacket(TUNE_INFO_PIDS[mTaskTick], buff) == UDSReturn.OK) {
                     val intentMessage = Intent(GUIMessage.FLASH_INFO.toString())
+                    intentMessage.setPackage(packageName)
                     intentMessage.putExtra(GUIMessage.FLASH_INFO.toString(), UDSInfo.getInfo())
                     sendBroadcast(intentMessage)
 
@@ -1163,6 +1202,7 @@ class BTService: Service() {
                     }
                     UDSReturn.COMPLETE -> {
                         val intentMessage = Intent(GUIMessage.UTILITY_INFO.toString())
+                        intentMessage.setPackage(packageName)
                         intentMessage.putExtra(GUIMessage.UTILITY_INFO.toString(), UDSdtc.getInfo())
                         sendBroadcast(intentMessage)
 
@@ -1170,6 +1210,7 @@ class BTService: Service() {
                     }
                     else -> {
                         val intentMessage = Intent(GUIMessage.UTILITY_INFO.toString())
+                        intentMessage.setPackage(packageName)
                         intentMessage.putExtra(GUIMessage.UTILITY_INFO.toString(), UDSdtc.getInfo())
                         sendBroadcast(intentMessage)
 
@@ -1188,6 +1229,7 @@ class BTService: Service() {
             buff?.let {
                 if (UDSdtc.processPacket(mTaskTick, buff, true) == UDSReturn.OK) {
                     val intentMessage = Intent(GUIMessage.UTILITY_INFO.toString())
+                    intentMessage.setPackage(packageName)
                     intentMessage.putExtra(GUIMessage.UTILITY_INFO.toString(), UDSdtc.getInfo())
                     sendBroadcast(intentMessage)
 
