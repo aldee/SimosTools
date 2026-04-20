@@ -3,32 +3,32 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/MainFragment">
+    app:startDestination="@id/ConnectionFragment">
 
     <fragment
-        android:id="@+id/MainFragment"
-        android:name="com.app.simostools.MainFragment"
-        android:label="@string/nav_main"
-        tools:layout="@layout/fragment_main">
+        android:id="@+id/ConnectionFragment"
+        android:name="com.app.simostools.ConnectionFragment"
+        android:label="@string/nav_connection"
+        tools:layout="@layout/fragment_connection">
 
         <action
-            android:id="@+id/action_MainFragment_to_LoggingFragment"
+            android:id="@+id/action_ConnectionFragment_to_LoggingFragment"
             app:destination="@id/LoggingFragment"/>
 
         <action
-            android:id="@+id/action_MainFragment_to_FlashingFragment"
+            android:id="@+id/action_ConnectionFragment_to_FlashingFragment"
             app:destination="@id/FlashingFragment"/>
 
         <action
-            android:id="@+id/action_MainFragment_to_LogViewerFragment"
+            android:id="@+id/action_ConnectionFragment_to_LogViewerFragment"
             app:destination="@id/LogViewerFragment"/>
 
         <action
-            android:id="@+id/action_MainFragment_to_UtilitiesFragment"
+            android:id="@+id/action_ConnectionFragment_to_UtilitiesFragment"
             app:destination="@id/UtilitiesFragment"/>
 
         <action
-            android:id="@+id/action_MainFragment_to_SettingsFragment"
+            android:id="@+id/action_ConnectionFragment_to_SettingsFragment"
             app:destination="@id/SettingsFragment"/>
 
     </fragment>

@@ -2,8 +2,8 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/MainFragment"
-            android:title="@string/nav_main" />
+            android:id="@+id/ConnectionFragment"
+            android:title="@string/nav_connection" />
         <item
             android:id="@+id/LoggingFragment"
             android:title="@string/button_logging" />

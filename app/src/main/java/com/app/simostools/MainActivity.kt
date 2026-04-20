@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
@@ -35,6 +36,7 @@ class MainViewModel : ViewModel() {
     var currentTask: UDSTask                = UDSTask.NONE
     var guiTimer: Timer?                    = null
     var writeLog: Boolean                   = false
+    var currentStatusColor: Int             = android.graphics.Color.RED
 }
 
 class MainActivity : AppCompatActivity() {
@@ -96,6 +98,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
+        supportActionBar?.setBackgroundDrawable(ColorDrawable(Color.BLACK))
 
         val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
         val navView: NavigationView = findViewById(R.id.nav_view)
@@ -104,7 +107,7 @@ class MainActivity : AppCompatActivity() {
 
         appBarConfiguration = AppBarConfiguration(
             setOf(
-                R.id.MainFragment, R.id.LoggingFragment, R.id.FlashingFragment,
+                R.id.ConnectionFragment, R.id.LoggingFragment, R.id.FlashingFragment,
                 R.id.LogViewerFragment, R.id.UtilitiesFragment, R.id.SettingsFragment
             ), drawerLayout
         )
@@ -213,6 +216,18 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
     }
 
+    override fun onCreateOptionsMenu(menu: android.view.Menu?): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+
+    override fun onPrepareOptionsMenu(menu: android.view.Menu?): Boolean {
+        val statusItem = menu?.findItem(R.id.action_connection_status)
+        val icon = statusItem?.icon
+        icon?.setTint(mViewModel.currentStatusColor)
+        return super.onPrepareOptionsMenu(menu)
+    }
+
     private fun doExit() {
         //Write pid default files
         UDSLoggingMode.values().forEach { mode ->
@@ -253,39 +268,40 @@ class MainActivity : AppCompatActivity() {
 
     private fun setStatus() {
         var newString = ""
+        var statusColor = ColorList.ST_NONE.value
         when(mViewModel.currentTask) {
             UDSTask.NONE -> {
                 when(mViewModel.connectionState) {
                     BLEConnectionState.ERROR -> {
                         newString = getString(R.string.title_error, mViewModel.connectionState.errorMessage)
-                        setActionBarColor(ColorList.ST_ERROR.value)
+                        statusColor = ColorList.ST_ERROR.value
                     }
                     BLEConnectionState.NONE -> {
                         newString = getString(R.string.title_not_connected)
-                        setActionBarColor(ColorList.ST_NONE.value)
+                        statusColor = ColorList.ST_NONE.value
                     }
                     BLEConnectionState.CONNECTING -> {
                         newString = getString(R.string.title_connecting)
-                        setActionBarColor(ColorList.ST_CONNECTING.value)
+                        statusColor = ColorList.ST_CONNECTING.value
                     }
                     BLEConnectionState.CONNECTED -> {
                         newString = getString(R.string.title_connected_to, mViewModel.connectionState.deviceName)
-                        setActionBarColor(ColorList.ST_CONNECTED.value)
+                        statusColor = ColorList.ST_CONNECTED.value
                     }
                 }
             }
             UDSTask.LOGGING -> {
                 if(mViewModel.writeLog) {
                     newString = "Logging"
-                    setActionBarColor(ColorList.ST_WRITING.value)
+                    statusColor = ColorList.ST_WRITING.value
                 } else {
                     newString = "Polling"
-                    setActionBarColor(ColorList.ST_LOGGING.value)
+                    statusColor = ColorList.ST_LOGGING.value
                 }
             }
             UDSTask.FLASHING -> {
                 newString = "Flashing"
-                setActionBarColor(ColorList.ST_LOGGING.value)
+                statusColor = ColorList.ST_LOGGING.value
             }
             UDSTask.INFO        -> newString = "Getting ECU Info"
             UDSTask.DTC_GET     -> newString = "Getting DTC"
@@ -294,12 +310,12 @@ class MainActivity : AppCompatActivity() {
             UDSTask.TUNE_INFO   -> newString = "Getting Tune Info"
         }
         supportActionBar?.title = getString(R.string.app_name) + " - " + newString
+        mViewModel.currentStatusColor = statusColor
+        invalidateOptionsMenu()
     }
 
     private fun setActionBarColor(color: Int) {
-        val colorDrawable = ColorDrawable(color)
-        supportActionBar?.setBackgroundDrawable(colorDrawable)
-        window.statusBarColor = color
+        // No longer changing action bar background
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
