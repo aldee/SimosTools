@@ -22,6 +22,10 @@ import android.widget.ArrayAdapter
 import androidx.core.view.isVisible
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.app.simostools.core.bluetooth.*
+import com.app.simostools.core.uds.*
+import com.app.simostools.core.io.*
+import com.app.simostools.core.utils.*
 import androidx.navigation.fragment.findNavController
 
 var gFlashMsgList: Array<String>? = arrayOf()

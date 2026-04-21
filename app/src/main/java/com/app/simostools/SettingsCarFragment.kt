@@ -11,6 +11,10 @@ import android.widget.SeekBar.OnSeekBarChangeListener
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.core.content.ContextCompat
+import com.app.simostools.core.bluetooth.*
+import com.app.simostools.core.uds.*
+import com.app.simostools.core.io.*
+import com.app.simostools.core.utils.*
 
 class SettingsCarViewModel : ViewModel() {
     var logMode         = UDSLoggingMode.MODE_22

@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import com.app.simostools.core.io.ColorList
 
 class SwitchArrayAdapter(context: Context, textViewResourceId: Int, list: Array<String>) :
     ArrayAdapter<String>(context, textViewResourceId) {

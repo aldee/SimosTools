@@ -9,6 +9,10 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.ItemTouchHelper
+import com.app.simostools.core.bluetooth.*
+import com.app.simostools.core.uds.*
+import com.app.simostools.core.io.*
+import com.app.simostools.core.utils.*
 
 object TempPIDS {
     var list22: Array<PIDStruct?>?  = null

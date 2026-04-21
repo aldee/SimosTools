@@ -1,12 +1,20 @@
-package com.app.simostools
+package com.app.simostools.core.utils
 
 import android.content.Context
 import android.util.Log
+import com.app.simostools.core.io.ConfigSettings
 import java.io.*
 import java.lang.Exception
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+
+const val DEBUG_LOG_NONE              = 0
+const val DEBUG_LOG_INFO              = 1
+const val DEBUG_LOG_WARNING           = 2
+const val DEBUG_LOG_DEBUG             = 4
+const val DEBUG_LOG_EXCEPTION         = 8
+const val DEBUG_LOG_COMMUNICATIONS    = 16
 
 object DebugLog {
     private val TAG = "DebugLog"

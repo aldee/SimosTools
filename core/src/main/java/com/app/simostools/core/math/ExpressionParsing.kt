@@ -1,4 +1,4 @@
-package com.app.simostools
+package com.app.simostools.core.math
 
 import kotlin.math.*
 

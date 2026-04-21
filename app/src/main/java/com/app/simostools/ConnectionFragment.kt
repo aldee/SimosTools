@@ -16,6 +16,10 @@ import androidx.core.content.ContextCompat.startForegroundService
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.app.simostools.core.bluetooth.*
+import com.app.simostools.core.uds.*
+import com.app.simostools.core.io.*
+import com.app.simostools.core.utils.*
 
 data class BTDevice(val name: String, val address: String)
 

@@ -1,6 +1,10 @@
-package com.app.simostools
+package com.app.simostools.core.io
 
 import android.content.Context
+import com.app.simostools.core.uds.MAX_PIDS
+import com.app.simostools.core.uds.PIDStruct
+import com.app.simostools.core.utils.DebugLog
+import com.app.simostools.core.utils.toHex
 import java.io.*
 import java.lang.Long.parseLong
 

@@ -1,4 +1,4 @@
-package com.app.simostools
+package com.app.simostools.core.uds
 
 data class DTCStruct(val code: Int,
                       val pcode: String,

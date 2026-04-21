@@ -1,6 +1,10 @@
-package com.app.simostools
+package com.app.simostools.core.uds
 
 import android.content.Context
+import com.app.simostools.core.bluetooth.*
+import com.app.simostools.core.io.*
+import com.app.simostools.core.math.eval
+import com.app.simostools.core.utils.*
 import java.lang.Exception
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter

@@ -8,6 +8,10 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import com.app.simostools.core.bluetooth.*
+import com.app.simostools.core.uds.*
+import com.app.simostools.core.io.*
+import com.app.simostools.core.utils.*
 
 object ColorSettings {
     var mR = 255

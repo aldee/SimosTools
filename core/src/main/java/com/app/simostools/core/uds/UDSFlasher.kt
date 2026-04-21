@@ -1,7 +1,9 @@
-package com.app.simostools
+package com.app.simostools.core.uds
 
+import com.app.simostools.core.utils.DebugLog
+import com.app.simostools.core.utils.toHex
 import java.io.InputStream
-import java.lang.Math.round
+import kotlin.math.roundToInt
 import java.util.Calendar
 
 object UDSFlasher {
@@ -598,7 +600,7 @@ object UDSFlasher {
 
 
 
-                            progress = round(transferSequence.toFloat() / (bin[currentBlockOperation].size / CAL_BLOCK_TRANSFER_SIZE) * 100)
+                            progress = (transferSequence.toFloat() / (bin[currentBlockOperation].size / CAL_BLOCK_TRANSFER_SIZE) * 100).roundToInt()
 
                             //Send bytes, 0x36 [frame number]
                             //Break the whole bin into frames of FFD size, and
@@ -618,7 +620,7 @@ object UDSFlasher {
                             // the transfer
                             if(buff[1] == transferSequence.toByte()){
                                 transferSequence++
-                                progress = round(transferSequence.toFloat() / (bin[currentBlockOperation].size / CAL_BLOCK_TRANSFER_SIZE) * 100)
+                                progress = (transferSequence.toFloat() / (bin[currentBlockOperation].size / CAL_BLOCK_TRANSFER_SIZE) * 100).roundToInt()
 
                                 mLastString = ""
                                 //if the current transfer sequence number is larger than the max
@@ -703,7 +705,7 @@ object UDSFlasher {
                         UDS_RESPONSE.DOWNLOAD_ACCEPTED -> {
                             transferSequence = 1
                             patchTransferAddress = 0
-                            progress = round(patchTransferAddress.toFloat() / (patchBin.size) * 100)
+                            progress = (patchTransferAddress.toFloat() / (patchBin.size) * 100).roundToInt()
 
                             //Send bytes, 0x36 [frame number]
                             //Break the whole bin into frames of PATCH_TRANSFER_SIZE size, and
@@ -725,7 +727,7 @@ object UDSFlasher {
                             if(buff[1] == transferSequence.toByte()){
                                 transferSequence++
                                 patchTransferAddress += binAswVersion.software.patchTransferSize(patchTransferAddress)
-                                progress = round(patchTransferAddress.toFloat() / (patchBin.size) * 100)
+                                progress = (patchTransferAddress.toFloat() / (patchBin.size) * 100).roundToInt()
 
                                 mLastString = ""
                                 //if the current transfer sequence number is larger than the max

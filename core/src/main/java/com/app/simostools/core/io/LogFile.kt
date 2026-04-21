@@ -1,4 +1,4 @@
-package com.app.simostools
+package com.app.simostools.core.io
 
 import android.content.Context
 import android.provider.MediaStore
@@ -7,6 +7,8 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import com.app.simostools.core.utils.DebugLog
+import com.app.simostools.core.utils.RequiredPermissions
 import java.io.*
 
 object LogFile {

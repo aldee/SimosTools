@@ -1,4 +1,6 @@
-package com.app.simostools
+package com.app.simostools.core.uds
+
+import com.app.simostools.core.bluetooth.*
 
 object UDSInfo {
     private var TAG                     = "UDSInfo"

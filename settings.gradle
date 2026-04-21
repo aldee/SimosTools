@@ -11,3 +11,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "VAG Tools"
 include ':app'
+include ':core'

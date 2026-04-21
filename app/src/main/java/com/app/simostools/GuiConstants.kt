@@ -1,0 +1,27 @@
+package com.app.simostools
+
+// Message types sent from the BluetoothChatService Handler
+enum class GUIMessage {
+    STATE_CONNECTION,
+    STATE_TASK,
+    TOAST,
+    READ,
+    READ_LOG,
+    WRITE_LOG,
+    UTILITY_INFO,
+    UTILITY_INFO_CLEAR,
+    UTILITY_PROGRESS,
+    UTILITY_PROGRESS_MAX,
+    UTILITY_PROGRESS_SHOW,
+    FLASH_INFO,
+    FLASH_INFO_CLEAR,
+    FLASH_PROGRESS,
+    FLASH_PROGRESS_MAX,
+    FLASH_PROGRESS_SHOW,
+    FLASH_CONFIRM,
+    FLASH_BUTTON_RESET,
+    PID_RELOAD,
+    SCAN_RESULT
+}
+
+const val LAYOUT_NAME = "LAYOUT_NAME"

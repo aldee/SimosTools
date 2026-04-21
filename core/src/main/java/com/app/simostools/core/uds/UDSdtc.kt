@@ -1,4 +1,7 @@
-package com.app.simostools
+package com.app.simostools.core.uds
+
+import com.app.simostools.core.bluetooth.*
+import com.app.simostools.core.utils.shl
 
 enum class DTCCommands(val str: String, val command: ByteArray, val response: ByteArray) {
     EXT_DIAG("Extended Diagnostic", byteArrayOf(0x10.toByte(), 0x03.toByte()), byteArrayOf(0x50.toByte(), 0x03.toByte())),
@@ -21,7 +24,7 @@ object UDSdtc {
 
     fun startTask(ticks: Int, clear: Boolean): ByteArray {
         return if (clear) startClearDTC(ticks)
-        else return startGetDTC(ticks)
+        else startGetDTC(ticks)
     }
 
     private fun startClearDTC(ticks: Int): ByteArray {

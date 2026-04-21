@@ -11,6 +11,10 @@ import androidx.appcompat.widget.SwitchCompat
 import java.lang.Exception
 import androidx.recyclerview.widget.ItemTouchHelper
 import java.lang.Long.parseLong
+import com.app.simostools.core.bluetooth.*
+import com.app.simostools.core.uds.*
+import com.app.simostools.core.io.*
+import com.app.simostools.core.utils.*
 
 class SettingsViewAdapter internal constructor(context: Context?, data: Array<PIDStruct?>?) :
     RecyclerView.Adapter<SettingsViewAdapter.ViewHolder>(), ItemMoveCallback.ItemTouchHelperContract {

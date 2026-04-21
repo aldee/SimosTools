@@ -1,8 +1,6 @@
 package com.app.simostools
 
 import android.app.Activity
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -26,9 +24,18 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import com.app.simostools.core.bluetooth.BLEConnectionState
+import com.app.simostools.core.bluetooth.BTServiceTask
+import com.app.simostools.core.io.ColorList
+import com.app.simostools.core.io.ConfigFile
+import com.app.simostools.core.io.PIDCSVFile
+import com.app.simostools.core.uds.PIDs
+import com.app.simostools.core.uds.UDSLoggingMode
+import com.app.simostools.core.uds.UDSTask
+import com.app.simostools.core.utils.DebugLog
+import com.app.simostools.core.utils.RequiredPermissions
 import com.google.android.material.navigation.NavigationView
 import java.util.Timer
-import java.util.TimerTask
 
 class MainViewModel : ViewModel() {
     var started: Boolean                    = false

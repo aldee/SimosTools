@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import android.view.Gravity
+import com.app.simostools.core.io.GaugeType
 
 class SwitchGauge: androidx.appcompat.widget.AppCompatTextView {
     constructor(context: Context) : super(context) {

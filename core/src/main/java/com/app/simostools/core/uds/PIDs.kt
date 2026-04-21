@@ -1,6 +1,7 @@
-package com.app.simostools
+package com.app.simostools.core.uds
 
-import java.lang.Exception
+import com.app.simostools.core.math.eval
+import com.app.simostools.core.utils.DebugLog
 
 data class PIDStruct(var address: Long,
                      var length: Int,
