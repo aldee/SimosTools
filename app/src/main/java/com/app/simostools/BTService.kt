@@ -990,9 +990,11 @@ class BTService: Service() {
                         }
                     }
                 }
-            } ?: if(UDSLogger.processPacket(mTaskTick, buff, applicationContext) != UDSReturn.OK) {
-                DebugLog.w(TAG, "Logging timeout.")
-                setTaskState(UDSTask.NONE)
+            } ?: run {
+                if (UDSLogger.processPacket(mTaskTick, buff, applicationContext) != UDSReturn.OK) {
+                    DebugLog.w(TAG, "Logging timeout.")
+                    setTaskState(UDSTask.NONE)
+                }
             }
         }
 
@@ -1101,9 +1103,11 @@ class BTService: Service() {
                 } else {
                     setTaskState(UDSTask.NONE)
                 }
-            }?: if(UDSInfo.processPacket(mTaskTick, buff) != UDSReturn.OK) {
-                DebugLog.w(TAG, "GetInfo timeout.")
-                setTaskState(UDSTask.NONE)
+            } ?: run {
+                if (UDSInfo.processPacket(mTaskTick, buff) != UDSReturn.OK) {
+                    DebugLog.w(TAG, "GetInfo timeout.")
+                    setTaskState(UDSTask.NONE)
+                }
             }
         }
 
@@ -1122,9 +1126,11 @@ class BTService: Service() {
                 } else {
                     setTaskState(UDSTask.NONE)
                 }
-            }?: if(UDSInfo.processPacket(mTaskTick, buff) != UDSReturn.OK) {
-                DebugLog.w(TAG, "GetInfo timeout.")
-                setTaskState(UDSTask.NONE)
+            } ?: run {
+                if (UDSInfo.processPacket(mTaskTick, buff) != UDSReturn.OK) {
+                    DebugLog.w(TAG, "GetInfo timeout.")
+                    setTaskState(UDSTask.NONE)
+                }
             }
         }
 
@@ -1152,9 +1158,11 @@ class BTService: Service() {
                         setTaskState(UDSTask.NONE)
                     }
                 }
-            }?: if(UDSdtc.processPacket(mTaskTick, buff, false) != UDSReturn.OK) {
-                DebugLog.w(TAG, "GetDTC timeout.")
-                setTaskState(UDSTask.NONE)
+            } ?: run {
+                if (UDSdtc.processPacket(mTaskTick, buff, false) != UDSReturn.OK) {
+                    DebugLog.w(TAG, "GetDTC timeout.")
+                    setTaskState(UDSTask.NONE)
+                }
             }
         }
 
@@ -1173,9 +1181,11 @@ class BTService: Service() {
                 } else {
                     setTaskState(UDSTask.NONE)
                 }
-            }?: if(UDSdtc.processPacket(mTaskTick, buff, true) != UDSReturn.OK) {
-                DebugLog.w(TAG, "ClearDTC timeout.")
-                setTaskState(UDSTask.NONE)
+            } ?: run {
+                if (UDSdtc.processPacket(mTaskTick, buff, true) != UDSReturn.OK) {
+                    DebugLog.w(TAG, "ClearDTC timeout.")
+                    setTaskState(UDSTask.NONE)
+                }
             }
         }
 
