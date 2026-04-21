@@ -1,15 +1,59 @@
+# Built objects
+bin/
+gen/
+out/
+build/
+
+# Gradle
+.gradle/
+build/
+gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
 *.iml
-.gradle
+*.iws
+*.ipr
+
+# VS Code
+.vscode/
+
+# Kotlin
+.kotlin/
+
+# Android Studio
+/captures/
 /local.properties
-/.idea/caches
-/.idea/libraries
+/.idea/caches/
+/.idea/libraries/
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+.externalNativeBuild/
+.cxx/
+
+# OS generated files
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+.DS_Store?
+ehthumbs.db
+Icon?
+Thumbs.db
+
+# Log files
+*.log
+
+# Keystore files
+# *.jks
+# *.keystore
+# *.p12
+
+# Google Services
+google-services.json
+
+# Crashlytics
+com_crashlytics_export_strings.xml
+
+# Module-specific build directories
+app/build/
+core/build/
